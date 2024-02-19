@@ -30,6 +30,16 @@ enum class Encoding {
     NONE
 }
 
+fun printer(input: ByteArray): String {
+    var s = "("
+    for (i in input) {
+        val k = if (i < 0) i + 256 else i
+        s += "${k}, "
+    }
+    s += ")"
+    return s
+}
+
 const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
 @Serializable data class SignMetadata(val encoding: Encoding, val schema: Map<String, String>) {}
@@ -53,12 +63,12 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         return this.lazySodium.cryptoCoreEd25519ScalarReduce(a).toByteArray()
     }
 
-    fun harden(num: Int): Int = 0x80000000.toInt() + num
+    fun harden(num: UInt): UInt = 0x80000000.toUInt() + num
 
-    fun getBIP44PathFromContext(context: KeyContext, account: Int, keyIndex: Int): List<Int> {
+    fun getBIP44PathFromContext(context: KeyContext, account: UInt, keyIndex: UInt): List<UInt> {
         return when (context) {
-            KeyContext.Address -> listOf(harden(44), harden(283), harden(account), 0, keyIndex)
-            KeyContext.Identity -> listOf(harden(44), harden(0), harden(account), 0, keyIndex)
+            KeyContext.Address -> listOf(harden(44u), harden(283u), harden(account), 0u, keyIndex)
+            KeyContext.Identity -> listOf(harden(44u), harden(0u), harden(account), 0u, keyIndex)
             else -> throw IllegalArgumentException("Invalid context")
         }
     }
@@ -123,7 +133,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - (z, c) where z is the 64-byte child key and c is the chain code
      */
-    fun derivedNonHardened(kl: ByteArray, cc: ByteArray, index: Int): Pair<ByteArray, ByteArray> {
+    fun deriveNonHardened(kl: ByteArray, cc: ByteArray, index: UInt): Pair<ByteArray, ByteArray> {
         val data = ByteBuffer.allocate(1 + 32 + 4)
         data.put(1 + 32, index.toByte())
 
@@ -162,10 +172,12 @@ class ContextualApiCrypto(private var seed: ByteArray) {
             kl: ByteArray,
             kr: ByteArray,
             cc: ByteArray,
-            index: Int
+            index: UInt
     ): Pair<ByteArray, ByteArray> {
+        val indexLEBytes = ByteArray(4) { i -> ((index shr (8 * i)) and 0xFFu).toByte() }
         val data = ByteBuffer.allocate(1 + 64 + 4)
-        data.put(1 + 64, index.toByte())
+        data.position(1 + 64)
+        data.put(indexLEBytes)
         data.position(1)
         data.put(kl)
         data.put(kr)
@@ -198,13 +210,13 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * - (kL, kR, c) where kL is the left 32 bytes of the child key (the new scalar), kR is the
      * right 32 bytes of the child key, and c is the chain code. Total 96 bytes
      */
-    fun deriveChildNodePrivate(extendedKey: ByteArray, index: Int): ByteArray {
+    fun deriveChildNodePrivate(extendedKey: ByteArray, index: UInt): ByteArray {
         val kl = extendedKey.sliceArray(0 until 32)
         val kr = extendedKey.sliceArray(32 until 64)
         val cc = extendedKey.sliceArray(64 until 96)
 
         val (z, childChainCode) =
-                if (index < 0x80000000) derivedNonHardened(kl, cc, index)
+                if (index < 0x80000000.toUInt()) deriveNonHardened(kl, cc, index)
                 else deriveHardened(kl, kr, cc, index)
 
         val chainCode = childChainCode.sliceArray(32 until 64)
@@ -247,9 +259,8 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - The public key of 32 bytes. If isPrivate is true, returns the private key instead.
      */
-    fun deriveKey(rootKey: ByteArray, bip44Path: List<Int>, isPrivate: Boolean = true): ByteArray {
+    fun deriveKey(rootKey: ByteArray, bip44Path: List<UInt>, isPrivate: Boolean = true): ByteArray {
         var derived = this.deriveChildNodePrivate(rootKey, bip44Path[0])
-        /*
         derived = this.deriveChildNodePrivate(derived, bip44Path[1])
         derived = this.deriveChildNodePrivate(derived, bip44Path[2])
         derived = this.deriveChildNodePrivate(derived, bip44Path[3])
@@ -268,7 +279,6 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         // 32)
 
         derived = this.deriveChildNodePrivate(derived, bip44Path[4])
-        */
         val scalar = derived.sliceArray(0 until 32) // scalar == pvtKey
         return if (isPrivate) scalar
         else this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
@@ -285,9 +295,9 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - public key 32 bytes
      */
-    fun keyGen(context: KeyContext, account: Int, keyIndex: Int): ByteArray {
+    fun keyGen(context: KeyContext, account: UInt, keyIndex: UInt): ByteArray {
         val rootKey: ByteArray = fromSeed(this.seed)
-        val bip44Path: List<Int> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
 
         return this.deriveKey(rootKey, bip44Path, false)
     }
@@ -318,8 +328,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
     //         keyIndex: Int,
     //         data: ByteArray,
     //         metadata: SignMetadata
-    // ): Any = // TODO: replace Any
-    // withContext(Dispatchers.IO) {
+    // ): Any {
     //             // validate data
 
     //             // TODO: Re add this data validation logic
@@ -336,7 +345,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
     //             // Assuming ready is a CompletableFuture that ensures libsodium is ready
     //             // ready.join()
 
-    //             val rootKey: ByteArray = fromSeed(this@ContextualApiCrypto.seed)
+    //             val rootKey: ByteArray = fromSeed(this.seed)
     //             val bip44Path: List<Int> = getBIP44PathFromContext(context, account, keyIndex)
     //             val raw: ByteArray = deriveKey(rootKey, bip44Path, true)
 
@@ -385,8 +394,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
     //         }
 
     /**
-     * SAMPLE IMPLEMENTATION to show how to validate data with encoding and schema, using base64 as
-     * an example
+     * Impelemntation how to validate data with encoding and schema, using base64 as an example
      *
      * @param message
      * @param metadata
@@ -496,15 +504,15 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      */
     suspend fun ECDH(
             context: KeyContext,
-            account: Int,
-            keyIndex: Int,
+            account: UInt,
+            keyIndex: UInt,
             otherPartyPub: ByteArray
     ): ByteArray {
         // NaCl.sodium() // Initialize sodium
 
         val rootKey: ByteArray = fromSeed(this.seed)
 
-        val bip44Path: List<Int> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
         val childKey: ByteArray = this.deriveKey(rootKey, bip44Path, true)
 
         val scalar: ByteArray = childKey.sliceArray(0 until 32)
