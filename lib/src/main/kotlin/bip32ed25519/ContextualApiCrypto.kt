@@ -502,7 +502,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - raw 32 bytes shared secret
      */
-    suspend fun ECDH(
+    fun ECDH(
             context: KeyContext,
             account: UInt,
             keyIndex: UInt,

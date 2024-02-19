@@ -5,7 +5,9 @@ package bip32ed25519
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import kotlin.collections.component1
+import kotlin.random.Random
 import kotlin.test.Test
+import kotlin.test.assertNotEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 
@@ -22,7 +24,7 @@ val seedArray =
 class ContextualApiCryptoTest {
 
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    internal class UnitTestSuite {
+    internal class KeyGenTests {
 
         private lateinit var c: ContextualApiCrypto
 
@@ -283,7 +285,7 @@ class ContextualApiCryptoTest {
     }
 
     @Test
-    fun fromSeedTest() {
+    fun fromSeedBip39Test() {
 
         // 58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234
 
@@ -316,5 +318,36 @@ class ContextualApiCryptoTest {
         }
 
         assert(rootKey.size == 96) { "rootKey size is not 96" }
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    internal class ECDHTests {
+
+        private lateinit var alice: ContextualApiCrypto
+        private lateinit var bob: ContextualApiCrypto
+
+        @BeforeAll
+        fun setup() {
+
+            val aliceSeed = Random.nextBytes(ByteArray(64))
+            val bobSeed = Random.nextBytes(ByteArray(64))
+            alice = ContextualApiCrypto(aliceSeed)
+            bob = ContextualApiCrypto(bobSeed)
+        }
+
+        @Test
+        fun basicECDHTest() {
+            val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
+            val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
+
+            val aliceSharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey)
+            val bobSharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey)
+
+            assertNotEquals(aliceKey, bobKey, "aliceSharedSecret and bobSharedSecret are not equal")
+
+            assert(aliceSharedSecret.contentEquals(bobSharedSecret)) {
+                "aliceSharedSecret and bobSharedSecret are not equal"
+            }
+        }
     }
 }
