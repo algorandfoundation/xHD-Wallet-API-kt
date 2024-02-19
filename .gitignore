@@ -28,3 +28,6 @@ replay_pid*
 
 # Ignore Gradle build output directory
 build
+
+# Include the .jar files that we import
+!lib/libs/*.jar

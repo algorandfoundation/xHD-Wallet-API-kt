@@ -249,6 +249,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      */
     fun deriveKey(rootKey: ByteArray, bip44Path: List<Int>, isPrivate: Boolean = true): ByteArray {
         var derived = this.deriveChildNodePrivate(rootKey, bip44Path[0])
+        /*
         derived = this.deriveChildNodePrivate(derived, bip44Path[1])
         derived = this.deriveChildNodePrivate(derived, bip44Path[2])
         derived = this.deriveChildNodePrivate(derived, bip44Path[3])
@@ -267,7 +268,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         // 32)
 
         derived = this.deriveChildNodePrivate(derived, bip44Path[4])
-
+        */
         val scalar = derived.sliceArray(0 until 32) // scalar == pvtKey
         return if (isPrivate) scalar
         else this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
