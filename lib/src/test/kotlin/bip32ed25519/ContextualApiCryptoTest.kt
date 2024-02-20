@@ -392,18 +392,22 @@ class ContextualApiCryptoTest {
             ) { "produced second shared secret does not correspond to hardcoded secret" }
 
             // TODO: hash these values with another blake2d hash library to make sure they conform
-            // with the shared secrets produced by our library
+            // with the shared secrets produced by our library, and other platforms as well
             // These are concatenations of shared point + alice's pubkey + bob's pubkey and
             // shared point + bob's pubkey + alice's pubkey respectively
 
-            // (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220, 254, 152, 43, 5, 106, 30, 224,
+            // concat alice first bob second (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220,
+            // 254, 152, 43,
+            // 5, 106, 30, 224,
             // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 228, 135, 197, 185, 34,
             // 66, 189, 8, 173, 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107,
             // 171, 16, 72, 246, 29, 130, 140, 236, 107, 43, 205, 32, 195, 0, 181, 38, 183, 171,
             // 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211, 203, 0, 232, 151,
             // 154, 123, 168, 167, 116, )
 
-            // (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220, 254, 152, 43, 5, 106, 30, 224,
+            // concat bob first alice second  (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220,
+            // 254, 152, 43,
+            // 5, 106, 30, 224,
             // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 43, 205, 32, 195, 0,
             // 181, 38, 183, 171, 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211,
             // 203, 0, 232, 151, 154, 123, 168, 167, 116, 228, 135, 197, 185, 34, 66, 189, 8, 173,

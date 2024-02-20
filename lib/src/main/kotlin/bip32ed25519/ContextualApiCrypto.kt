@@ -536,8 +536,6 @@ class ContextualApiCrypto(private var seed: ByteArray) {
             concatenated = sharedPoint + otherPartyCurve25519Key + myCurve25519Key
         }
 
-        print("Concatenated: ${printer(concatenated)}\n")
-
         // TODO: ensure that the byteArray -> string -> byteArray conversion does not affect hash
         return this.lazySodium.cryptoGenericHash(String(concatenated)).toByteArray()
     }
