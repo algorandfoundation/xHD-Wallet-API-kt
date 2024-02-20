@@ -45,7 +45,7 @@ const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 @Serializable data class SignMetadata(val encoding: Encoding, val schema: Map<String, String>) {}
 
 class ContextualApiCrypto(private var seed: ByteArray) {
-    internal val lazySodium: LazySodiumJava
+    val lazySodium: LazySodiumJava
 
     init {
         this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY))
@@ -489,8 +489,8 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      *
      * It creates a shared secret between two parties. Each party only needs to be aware of the
      * other's public key. This symmetric secret can be used to derive a symmetric key for
-     * encryption and decryption. Creating a private channel between the two parties.
-     *
+     * encryption and decryption. Creating a private channel between the two parties. Note that you
+     * must specify the order of concatenation for the public keys with otherFirst.
      * @param context
      * - context of the key (i.e Address, Identity)
      * @param account
@@ -499,6 +499,9 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * - key index. This value will be a SOFT derivation as part of BIP44.
      * @param otherPartyPub
      * - raw 32 bytes public key of the other party
+     * @param meFirst
+     * - decide the order of concatenation of the public keys in the shared secret, true: my public
+     * key first, false: other party's public key first
      * @returns
      * - raw 32 bytes shared secret
      */
@@ -506,21 +509,36 @@ class ContextualApiCrypto(private var seed: ByteArray) {
             context: KeyContext,
             account: UInt,
             keyIndex: UInt,
-            otherPartyPub: ByteArray
+            otherPartyPub: ByteArray,
+            meFirst: Boolean,
     ): ByteArray {
-        // NaCl.sodium() // Initialize sodium
 
         val rootKey: ByteArray = fromSeed(this.seed)
 
         val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
-        val childKey: ByteArray = this.deriveKey(rootKey, bip44Path, true)
+        val childPrivateKey: ByteArray = this.deriveKey(rootKey, bip44Path, true)
+        val childPublicKey: ByteArray = this.deriveKey(rootKey, bip44Path, false)
 
-        val scalar: ByteArray = childKey.sliceArray(0 until 32)
+        val scalar: ByteArray = childPrivateKey.sliceArray(0 until 32)
 
-        val sharedSecret = ByteArray(32)
-        val curve25519Key = ByteArray(32)
-        this.lazySodium.convertPublicKeyEd25519ToCurve25519(curve25519Key, otherPartyPub)
-        this.lazySodium.cryptoScalarMult(sharedSecret, scalar, curve25519Key)
-        return sharedSecret
+        val sharedPoint = ByteArray(32)
+        val myCurve25519Key = ByteArray(32)
+        val otherPartyCurve25519Key = ByteArray(32)
+        this.lazySodium.convertPublicKeyEd25519ToCurve25519(myCurve25519Key, childPublicKey)
+        this.lazySodium.convertPublicKeyEd25519ToCurve25519(otherPartyCurve25519Key, otherPartyPub)
+        this.lazySodium.cryptoScalarMult(sharedPoint, scalar, otherPartyCurve25519Key)
+
+        val concatenated: ByteArray
+
+        if (meFirst) {
+            concatenated = sharedPoint + myCurve25519Key + otherPartyCurve25519Key
+        } else {
+            concatenated = sharedPoint + otherPartyCurve25519Key + myCurve25519Key
+        }
+
+        print("Concatenated: ${printer(concatenated)}\n")
+
+        // TODO: ensure that the byteArray -> string -> byteArray conversion does not affect hash
+        return this.lazySodium.cryptoGenericHash(String(concatenated)).toByteArray()
     }
 }

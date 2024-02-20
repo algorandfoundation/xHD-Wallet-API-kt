@@ -4,8 +4,8 @@
 package bip32ed25519
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
+import com.goterl.lazysodium.utils.Key
 import kotlin.collections.component1
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
 import org.junit.jupiter.api.BeforeAll
@@ -328,9 +328,16 @@ class ContextualApiCryptoTest {
 
         @BeforeAll
         fun setup() {
+            val aliceSeed =
+                    helperStringToByteArray(
+                            "250,218,209,237,184,13,81,24,213,243,205,138,50,233,66,156,89,25,93,27,233,217,142,232,32,9,244,213,227,226,176,97,104,107,153,85,22,65,82,124,64,137,31,205,147,48,131,90,11,121,56,111,194,192,90,135,207,74,16,171,168,84,252,76"
+                    )
 
-            val aliceSeed = Random.nextBytes(ByteArray(64))
-            val bobSeed = Random.nextBytes(ByteArray(64))
+            val bobSeed =
+                    helperStringToByteArray(
+                            "203,178,135,64,9,155,198,24,16,162,51,115,116,210,61,105,175,129,131,137,103,33,96,79,103,185,99,183,195,214,80,143,251,154,13,153,115,11,143,188,88,2,221,12,128,5,232,93,192,160,104,2,81,219,86,21,96,32,37,73,208,95,25,81"
+                    )
+
             alice = ContextualApiCrypto(aliceSeed)
             bob = ContextualApiCrypto(bobSeed)
         }
@@ -340,13 +347,105 @@ class ContextualApiCryptoTest {
             val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
             val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
 
-            val aliceSharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey)
-            val bobSharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey)
+            val aliceSharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, true)
+            val bobSharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, false)
 
-            assertNotEquals(aliceKey, bobKey, "aliceSharedSecret and bobSharedSecret are not equal")
+            assertNotEquals(aliceKey, bobKey, "alice's key and bob's key are unexpectedly equal")
 
             assert(aliceSharedSecret.contentEquals(bobSharedSecret)) {
                 "aliceSharedSecret and bobSharedSecret are not equal"
+            }
+
+            assert(
+                    aliceSharedSecret.contentEquals(
+                            helperStringToByteArray(
+                                    "51,65,50,54,54,57,65,68,51,69,49,48,51,68,69,49,55,57,48,49,50,70,53,68,70,53,69,48,70,56,50,57,66,69,56,49,70,53,70,69,67,50,49,56,50,65,67,51,52,53,52,51,66,67,66,68,56,65,65,53,53,67,67,69"
+                            )
+                    )
+            ) { "produced shared secret does not correspond to hardcoded secret" }
+
+            // Now we reverse pubkey order in concatenation
+            val aliceSharedSecret2 = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, false)
+            val bobSharedSecret2 = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, true)
+
+            assertNotEquals(
+                    aliceSharedSecret,
+                    aliceSharedSecret2,
+                    "despite different concat orders shared secrets are equal"
+            )
+            assertNotEquals(
+                    bobSharedSecret,
+                    bobSharedSecret2,
+                    "despite different concat orders shared secrets are equal"
+            )
+
+            assert(aliceSharedSecret2.contentEquals(bobSharedSecret2)) {
+                "aliceSharedSecret and bobSharedSecret are not equal"
+            }
+
+            assert(
+                    aliceSharedSecret2.contentEquals(
+                            helperStringToByteArray(
+                                    "70,50,69,69,67,54,50,68,65,54,70,68,52,50,70,57,52,49,67,49,70,67,68,65,65,56,53,56,53,54,54,49,66,66,70,66,56,49,48,48,53,55,67,57,66,68,48,50,68,56,57,65,70,49,51,67,48,66,67,69,55,57,56,56"
+                            )
+                    )
+            ) { "produced second shared secret does not correspond to hardcoded secret" }
+
+            // TODO: hash these values with another blake2d hash library to make sure they conform
+            // with the shared secrets produced by our library
+            // These are concatenations of shared point + alice's pubkey + bob's pubkey and
+            // shared point + bob's pubkey + alice's pubkey respectively
+
+            // (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220, 254, 152, 43, 5, 106, 30, 224,
+            // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 228, 135, 197, 185, 34,
+            // 66, 189, 8, 173, 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107,
+            // 171, 16, 72, 246, 29, 130, 140, 236, 107, 43, 205, 32, 195, 0, 181, 38, 183, 171,
+            // 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211, 203, 0, 232, 151,
+            // 154, 123, 168, 167, 116, )
+
+            // (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220, 254, 152, 43, 5, 106, 30, 224,
+            // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 43, 205, 32, 195, 0,
+            // 181, 38, 183, 171, 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211,
+            // 203, 0, 232, 151, 154, 123, 168, 167, 116, 228, 135, 197, 185, 34, 66, 189, 8, 173,
+            // 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107, 171, 16, 72, 246,
+            // 29, 130, 140, 236, 107, )
+        }
+
+        @Test
+        fun encryptDecryptECDHTest() {
+            val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
+            val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
+
+            val aliceSharedSecret =
+                    Key.fromBytes(alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, true))
+            val bobSharedSecret =
+                    Key.fromBytes(bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, false))
+
+            assert(aliceSharedSecret.asBytes.contentEquals(bobSharedSecret.asBytes)) {
+                "aliceSharedSecret and bobSharedSecret are equal"
+            }
+
+            val message = "Hello World"
+            val nonce =
+                    helperStringToByteArray(
+                            "16,197,142,8,174,91,118,244,202,136,43,200,97,242,104,99,42,154,191,32,67,30,6,123"
+                    )
+
+            // Encrypt
+            val ciphertext = alice.lazySodium.cryptoSecretBoxEasy(message, nonce, aliceSharedSecret)
+
+            // Decrypt
+            val plaintext =
+                    alice.lazySodium.cryptoSecretBoxOpenEasy(ciphertext, nonce, aliceSharedSecret)
+
+            assert(
+                    ciphertext.equals("6E010FCA6C350392DC4893D148D77A788AA35638CB2A6341A0E5A4"),
+            ) {
+                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello World' message"
+            }
+
+            assert(message.contentEquals(plaintext)) {
+                "message and decrypted plaintext are not equal"
             }
         }
     }
