@@ -287,6 +287,7 @@ class ContextualApiCryptoTest {
     @Test
     fun fromSeedBip39Test() {
 
+        // seedArray:
         // 58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234
 
         //////////
@@ -452,5 +453,39 @@ class ContextualApiCryptoTest {
                 "message and decrypted plaintext are not equal"
             }
         }
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    internal class SignTypedDataTests {
+        private lateinit var c: ContextualApiCrypto
+
+        @BeforeAll
+        fun setup() {
+            c = ContextualApiCrypto(seedArray)
+        }
+
+        @Test
+        fun simpleSignDataTest() {
+            val data = "Hello World".toByteArray()
+
+            val pubKey = c.keyGen(KeyContext.Address, 0u, 0u)
+            val signature = c.signData(KeyContext.Address, 0u, 0u, data, "")
+            val isValid = c.verifyWithPublicKey(signature, data, pubKey)
+            assert(isValid) { "signature is not valid" }
+
+            val pubKey2 = c.keyGen(KeyContext.Address, 0u, 1u)
+            assert(!c.verifyWithPublicKey(signature, data, pubKey2)) {
+                "signature is unexpectedly valid"
+            }
+        }
+
+        // @Test
+        // fun signAuthChallengeTest() {
+        //     val challenge = Random.nextBytes(ByteArray(32))
+        //     val path = Paths.get(ClassLoader.getSystemResource("auth.request.json").toURI())
+        //     val metadata = SignMetadata(Encoding.BASE64, authSchema)
+
+        //     val encoded = Base64.getEncoder().encodeToString(Files.readAllBytes(path))
+        // }
     }
 }

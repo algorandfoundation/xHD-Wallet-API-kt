@@ -3,6 +3,8 @@
  */
 package bip32ed25519
 
+// import kotlinx.serialization.cbor.Cbor
+
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
@@ -16,9 +18,6 @@ import kotlinx.serialization.Serializable
 enum class KeyContext(val value: Int) {
     Address(0),
     Identity(1),
-    TESTVECTOR_1(2),
-    TESTVECTOR_2(3),
-    TESTVECTOR_3(4),
 }
 
 @Serializable data class ChannelKeys(val tx: ByteArray, val rx: ByteArray) {}
@@ -28,6 +27,12 @@ enum class Encoding {
     MSGPACK,
     BASE64,
     NONE
+}
+
+enum class GetMode {
+    Scalar,
+    PublicKey,
+    Raw
 }
 
 fun printer(input: ByteArray): String {
@@ -49,18 +54,6 @@ class ContextualApiCrypto(private var seed: ByteArray) {
 
     init {
         this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY))
-    }
-
-    fun crypto_core_ed25519_scalar_add(a: ByteArray, b: ByteArray): ByteArray {
-        return this.lazySodium.cryptoCoreEd25519ScalarAdd(a, b).toByteArray()
-    }
-
-    fun crypto_core_ed25519_scalar_mul(a: ByteArray, b: ByteArray): ByteArray {
-        return this.lazySodium.cryptoCoreEd25519ScalarMul(a, b).toByteArray()
-    }
-
-    fun crypto_core_ed25519_scalar_reduce(a: BigInteger): ByteArray {
-        return this.lazySodium.cryptoCoreEd25519ScalarReduce(a).toByteArray()
     }
 
     fun harden(num: UInt): UInt = 0x80000000.toUInt() + num
@@ -133,7 +126,11 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - (z, c) where z is the 64-byte child key and c is the chain code
      */
-    fun deriveNonHardened(kl: ByteArray, cc: ByteArray, index: UInt): Pair<ByteArray, ByteArray> {
+    internal fun deriveNonHardened(
+            kl: ByteArray,
+            cc: ByteArray,
+            index: UInt
+    ): Pair<ByteArray, ByteArray> {
         val data = ByteBuffer.allocate(1 + 32 + 4)
         data.put(1 + 32, index.toByte())
 
@@ -168,7 +165,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - (z, c) where z is the 64-byte child key and c is the chain code
      */
-    fun deriveHardened(
+    internal fun deriveHardened(
             kl: ByteArray,
             kr: ByteArray,
             cc: ByteArray,
@@ -210,7 +207,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * - (kL, kR, c) where kL is the left 32 bytes of the child key (the new scalar), kR is the
      * right 32 bytes of the child key, and c is the chain code. Total 96 bytes
      */
-    fun deriveChildNodePrivate(extendedKey: ByteArray, index: UInt): ByteArray {
+    internal fun deriveChildNodePrivate(extendedKey: ByteArray, index: UInt): ByteArray {
         val kl = extendedKey.sliceArray(0 until 32)
         val kr = extendedKey.sliceArray(32 until 64)
         val cc = extendedKey.sliceArray(64 until 96)
@@ -255,11 +252,15 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * - BIP44 path (m / purpose' / coin_type' / account' / change / address_index). The ' indicates
      * that the value is hardened
      * @param isPrivate
-     * - if true, return the private key, otherwise return the public key
+     * - returns full 64 bytes privatekey (first 32 bytes scalar), false returns 32 byte public key,
      * @returns
      * - The public key of 32 bytes. If isPrivate is true, returns the private key instead.
      */
-    fun deriveKey(rootKey: ByteArray, bip44Path: List<UInt>, isPrivate: Boolean = true): ByteArray {
+    internal fun deriveKey(
+            rootKey: ByteArray,
+            bip44Path: List<UInt>,
+            isPrivate: Boolean
+    ): ByteArray {
         var derived = this.deriveChildNodePrivate(rootKey, bip44Path[0])
         derived = this.deriveChildNodePrivate(derived, bip44Path[1])
         derived = this.deriveChildNodePrivate(derived, bip44Path[2])
@@ -279,9 +280,14 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         // 32)
 
         derived = this.deriveChildNodePrivate(derived, bip44Path[4])
-        val scalar = derived.sliceArray(0 until 32) // scalar == pvtKey
-        return if (isPrivate) scalar
-        else this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
+
+        if (isPrivate) {
+            return derived
+        } else {
+            return this.lazySodium
+                    .cryptoScalarMultEd25519BaseNoclamp(derived.sliceArray(0 until 32))
+                    .toBytes()
+        }
     }
 
     /**
@@ -302,96 +308,80 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         return this.deriveKey(rootKey, bip44Path, false)
     }
 
-    // /**
-    //  * Ref: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.6
-    //  *
-    //  * Edwards-Curve Digital Signature Algorithm (EdDSA)
-    //  *
-    //  * @param context
-    //  * - context of the key (i.e Address, Identity)
-    //  * @param account
-    //  * - account number. This value will be hardened as part of BIP44
-    //  * @param keyIndex
-    //  * - key index. This value will be a SOFT derivation as part of BIP44.
-    //  * @param data
-    //  * - data to be signed in raw bytes
-    //  * @param metadata
-    //  * - metadata object that describes how `data` was encoded and what schema to use to validate
-    //  * against
-    //  *
-    //  * @returns
-    //  * - signature holding R and S, totally 64 bytes
-    //  */
-    // suspend fun signData(
-    //         context: KeyContext,
-    //         account: Int,
-    //         keyIndex: Int,
-    //         data: ByteArray,
-    //         metadata: SignMetadata
-    // ): Any {
-    //             // validate data
+    /**
+     * Ref: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.6
+     *
+     * Edwards-Curve Digital Signature Algorithm (EdDSA)
+     *
+     * @param context
+     * - context of the key (i.e Address, Identity)
+     * @param account
+     * - account number. This value will be hardened as part of BIP44
+     * @param keyIndex
+     * - key index. This value will be a SOFT derivation as part of BIP44.
+     * @param data
+     * - data to be signed in raw bytes
+     * @param metadata
+     * - metadata object that describes how `data` was encoded and what schema to use to validate
+     * against
+     *
+     * @returns
+     * - signature holding R and S, totally 64 bytes
+     */
+    fun signData(
+            context: KeyContext,
+            account: UInt,
+            keyIndex: UInt,
+            data: ByteArray,
+            metadata: Any, // SignMetadata
+    ): ByteArray {
+        // validate data
 
-    //             // TODO: Re add this data validation logic
-    //             // val result = validateData(data, metadata)
+        // TODO: Re add this data validation logic
+        // val result = validateData(data, metadata)
 
-    //             // if (result is Error) { // decoding errors
-    //             //     throw result
-    //             // }
+        // if (result is Error) { // decoding errors
+        //     throw result
+        // }
 
-    //             // if (!result) { // failed schema validation
-    //             //     throw ERROR_BAD_DATA
-    //             // }
+        // if (!result) { // failed schema validation
+        //     throw ERROR_BAD_DATA
+        // }
 
-    //             // Assuming ready is a CompletableFuture that ensures libsodium is ready
-    //             // ready.join()
+        val rootKey: ByteArray = fromSeed(this.seed)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val raw: ByteArray = deriveKey(rootKey, bip44Path, true)
 
-    //             val rootKey: ByteArray = fromSeed(this.seed)
-    //             val bip44Path: List<Int> = getBIP44PathFromContext(context, account, keyIndex)
-    //             val raw: ByteArray = deriveKey(rootKey, bip44Path, true)
+        val scalar = raw.sliceArray(0 until 32)
+        val c = raw.sliceArray(32 until 64)
 
-    //             val scalar = raw.sliceArray(0 until 32)
-    //             val c = raw.sliceArray(32 until 64)
+        // \(1): pubKey = scalar * G (base point, no clamp)
+        val publicKey = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
 
-    //             // \(1): pubKey = scalar * G (base point, no clamp)
-    //             val publicKey =
-    // this@ContextualApiCrypto.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
+        // \(2): r = hash(c + msg) mod q [LE]
+        val rHash = MessageDigest.getInstance("SHA-512").digest(c + data).reversedArray()
+        val r = this.lazySodium.cryptoCoreEd25519ScalarReduce(rHash).toByteArray().reversedArray()
 
-    //             // \(2): h = hash(c + msg) mod q
-    //             val hash = BigInteger(1, MessageDigest.getInstance("SHA-512").digest(c + data))
-    //             val q =
-    //                     BigInteger(
-    //
-    // "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED",
-    //                             16
-    //                     )
-    //             val rBigInt = hash.mod(q)
+        // \(4):  R = r * G (base point, no clamp)
+        val R = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(r).toBytes()
 
-    //             // fill 32 bytes of r
-    //             // convert to ByteArray
-    //             val r = ByteArray(32)
-    //             val rBString = rBigInt.toString(16).padStart(64, '0') // convert to hex
+        var h = MessageDigest.getInstance("SHA-512").digest(R + publicKey + data)
+        h = this.lazySodium.cryptoCoreEd25519ScalarReduce(h).toByteArray().reversedArray()
 
-    //             for (i in r.indices) {
-    //                 r[i] = DatatypeConverter.parseHexBinary(rBString.substring(i * 2, i * 2 +
-    // 2))[0]
-    //             }
-
-    //             // \(4):  R = r * G (base point, no clamp)
-    //             val R = this@ContextualApiCrypto.cryptoScalarMultEd25519BaseNoclamp(r).toBytes()
-
-    //             var h = MessageDigest.getInstance("SHA-512").digest(R + publicKey + data)
-    //             h = this@ContextualApiCrypto.crypto_core_ed25519_scalar_reduce(BigInteger(1, h))
-
-    //             // \(5): S = (r + h * k) mod q
-    //             val S =
-    //                     this@ContextualApiCrypto.crypto_core_ed25519_scalar_add(
-    //                             r,
-    //                             this@ContextualApiCrypto.crypto_core_ed25519_scalar_mul(h,
-    // scalar)
-    //                     )
-
-    //             R + S
-    //         }
+        // \(5): S = (r + h * k) mod q
+        val S =
+                this.lazySodium
+                        .cryptoCoreEd25519ScalarAdd(
+                                r,
+                                this.lazySodium
+                                        .cryptoCoreEd25519ScalarMul(h, scalar)
+                                        .toByteArray()
+                                        .reversedArray()
+                        )
+                        .toByteArray()
+                        .reversedArray()
+        return R + S
+    }
 
     /**
      * Impelemntation how to validate data with encoding and schema, using base64 as an example
@@ -400,66 +390,42 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @param metadata
      * @returns
      */
-    private fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
-        // Check that decoded doesn't include the following prefixes: TX, MX, progData, Program
-        // These prefixes are reserved for the protocol
+    // fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
+    //     // Check for Algorand tags
+    //     if (hasAlgorandTags(message)) {
+    //         return false // Assuming ERROR_TAGS_FOUND maps to false
+    //     }
 
-        // if (this.hasAlgorandTags(message)) {
-        //     throw IllegalArgumentException(ERROR_TAGS_FOUND)
-        // }
-        //
-        // val decoded: ByteArray
-        // when (metadata.encoding) {
-        //     Encoding.BASE64 ->
-        //             decoded = Base64.getDecoder().decode(message.toString(Charsets.UTF_8))
-        //     Encoding.MSGPACK ->
-        //             decoded =
-        //                     MessagePack.newDefaultUnpacker(message)
-        //                             .unpackValue()
-        //                             .asBinaryValue()
-        //                             .asByteArray()
-        //     Encoding.NONE -> decoded = message
-        //     else -> throw IllegalArgumentException("Invalid encoding")
-        // }
+    //     val decoded: ByteArray =
+    //             when (metadata.encoding) {
+    //                 Encoding.BASE64 -> Base64.getDecoder().decode(message)
+    //                 Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
+    //                 Encoding.NONE -> message
+    //                 else -> throw IllegalArgumentException("Invalid encoding")
+    //             }
 
-        // // Check after decoding too
-        // // Some one might try to encode a regular transaction with the protocol reserved prefixes
-        // if (this.hasAlgorandTags(decoded)) {
-        //     throw IllegalArgumentException(ERROR_TAGS_FOUND)
-        // }
+    //     // Check after decoding too
+    //     if (hasAlgorandTags(decoded)) {
+    //         return false
+    //     }
 
-        // // validate with schema
-        // val mapper = jacksonObjectMapper()
-        // val jsonNode = mapper.readValue(decoded.toString(Charsets.UTF_8))
-        // val schemaNode = mapper.convertValue(metadata.schema, JsonNode::class.java)
+    //     // Validate with schema
+    //     val ajv = JsonSchemaFactory.byDefault()
+    //     val jsonNode = jacksonObjectMapper().readValue<JsonNode>(decoded)
+    //     val validationReport = ajv.getJsonSchema(metadata.schema).validate(jsonNode)
 
-        // val factory = JsonSchemaFactory.byDefault()
-        // val validator: JsonValidator = factory.validator
-        // val report: ProcessingReport = validator.validate(schemaNode, jsonNode)
+    //     if (!validationReport.isSuccess) {
+    //         println(validationReport)
+    //     }
 
-        // if (!report.isSuccess) println(report)
+    //     return validationReport.isSuccess
+    // }
 
-        // return report.isSuccess
-        return true
-    }
-
-    /**
-     * Detect if the message has Algorand protocol specific tags
-     *
-     * @param message
-     * - raw bytes of the message
-     * @returns
-     * - true if message has Algorand protocol specific tags, false otherwise
-     */
-    private fun hasAlgorandTags(message: ByteArray): Boolean {
-        // Check that decoded doesn't include the following prefixes: TX, MX, progData, Program
-        val tx = String(message.sliceArray(0..1), Charsets.US_ASCII)
-        val mx = String(message.sliceArray(0..1), Charsets.US_ASCII)
-        val progData = String(message.sliceArray(0..7), Charsets.US_ASCII)
-        val program = String(message.sliceArray(0..6), Charsets.US_ASCII)
-
-        return tx == "TX" || mx == "MX" || progData == "progData" || program == "Program"
-    }
+    // fun hasAlgorandTags(message: ByteArray): Boolean {
+    //     val prefixes = listOf("TX", "MX", "progData", "Program")
+    //     val messageString = String(message)
+    //     return prefixes.any { messageString.startsWith(it) }
+    // }
 
     /**
      * Wrapper around libsodium basic signature verification
