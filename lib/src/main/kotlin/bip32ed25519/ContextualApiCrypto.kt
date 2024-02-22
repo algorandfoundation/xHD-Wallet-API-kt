@@ -359,7 +359,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         val publicKey = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
 
         // \(2): r = hash(c + msg) mod q [LE]
-        val rHash = MessageDigest.getInstance("SHA-512").digest(c + data).reversedArray()
+        val rHash = MessageDigest.getInstance("SHA-512").digest(c + data)
         val r = this.lazySodium.cryptoCoreEd25519ScalarReduce(rHash).toByteArray().reversedArray()
 
         // \(4):  R = r * G (base point, no clamp)
@@ -380,6 +380,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
                         )
                         .toByteArray()
                         .reversedArray()
+
         return R + S
     }
 
