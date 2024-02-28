@@ -343,7 +343,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         // if (result is Error) { // decoding errors
         //     throw result
         // }
-
+∂
         // if (!result) { // failed schema validation
         //     throw ERROR_BAD_DATA
         // }
@@ -391,42 +391,42 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @param metadata
      * @returns
      */
-    // fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
-    //     // Check for Algorand tags
-    //     if (hasAlgorandTags(message)) {
-    //         return false // Assuming ERROR_TAGS_FOUND maps to false
-    //     }
+    fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
+        // Check for Algorand tags
+        if (hasAlgorandTags(message)) {
+            return false // Assuming ERROR_TAGS_FOUND maps to false
+        }
 
-    //     val decoded: ByteArray =
-    //             when (metadata.encoding) {
-    //                 Encoding.BASE64 -> Base64.getDecoder().decode(message)
-    //                 Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
-    //                 Encoding.NONE -> message
-    //                 else -> throw IllegalArgumentException("Invalid encoding")
-    //             }
+        val decoded: ByteArray =
+                when (metadata.encoding) {
+                    Encoding.BASE64 -> Base64.getDecoder().decode(message)
+                    Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
+                    Encoding.NONE -> message
+                    else -> throw IllegalArgumentException("Invalid encoding")
+                }
 
-    //     // Check after decoding too
-    //     if (hasAlgorandTags(decoded)) {
-    //         return false
-    //     }
+        // Check after decoding too
+        if (hasAlgorandTags(decoded)) {
+            return false
+        }
 
-    //     // Validate with schema
-    //     val ajv = JsonSchemaFactory.byDefault()
-    //     val jsonNode = jacksonObjectMapper().readValue<JsonNode>(decoded)
-    //     val validationReport = ajv.getJsonSchema(metadata.schema).validate(jsonNode)
+        // Validate with schema
+        val ajv = JsonSchemaFactory.byDefault()
+        val jsonNode = jacksonObjectMapper().readValue<JsonNode>(decoded)
+        val validationReport = ajv.getJsonSchema(metadata.schema).validate(jsonNode)
 
-    //     if (!validationReport.isSuccess) {
-    //         println(validationReport)
-    //     }
+        if (!validationReport.isSuccess) {
+            println(validationReport)
+        }
 
-    //     return validationReport.isSuccess
-    // }
+        return validationReport.isSuccess
+    }
 
-    // fun hasAlgorandTags(message: ByteArray): Boolean {
-    //     val prefixes = listOf("TX", "MX", "progData", "Program")
-    //     val messageString = String(message)
-    //     return prefixes.any { messageString.startsWith(it) }
-    // }
+    fun hasAlgorandTags(message: ByteArray): Boolean {
+        val prefixes = listOf("TX", "MX", "progData", "Program")
+        val messageString = String(message)
+        return prefixes.any { messageString.startsWith(it) }
+    }
 
     /**
      * Wrapper around libsodium basic signature verification
