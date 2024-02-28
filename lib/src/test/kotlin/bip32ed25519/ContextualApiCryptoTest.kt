@@ -13,479 +13,550 @@ import org.junit.jupiter.api.TestInstance
 
 // Helper function to convert a string of comma separated numbers to a byte array (to save space)
 fun helperStringToByteArray(input: String): ByteArray {
-    return input.split(",").map { it.trim().toInt() }.toIntArray().map { it.toByte() }.toByteArray()
+        return input.split(",")
+                        .map { it.trim().toInt() }
+                        .toIntArray()
+                        .map { it.toByte() }
+                        .toByteArray()
 }
 
 val seedArray =
-        helperStringToByteArray(
-                "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
-        )
+                helperStringToByteArray(
+                                "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
+                )
 
 class ContextualApiCryptoTest {
 
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    internal class KeyGenTests {
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        internal class KeyGenTests {
 
-        private lateinit var c: ContextualApiCrypto
+                private lateinit var c: ContextualApiCrypto
 
-        @BeforeAll
-        fun setup() {
-            c = ContextualApiCrypto(seedArray)
+                @BeforeAll
+                fun setup() {
+                        c = ContextualApiCrypto(seedArray)
+                }
+
+                @Test
+                fun hardenTest() {
+                        assert(c.harden(0u) == 2147483648u) {
+                                "harden(0) and 2147483648 are not equal"
+                        }
+                        assert(c.harden(1u) == 2147483649u) {
+                                "harden(1) and 2147483648 are not equal"
+                        }
+                        assert(c.harden(44u) == 2147483692u) {
+                                "harden(44) and 2147483648 are not equal"
+                        }
+                        assert(c.harden(283u) == 2147483931u) {
+                                "harden(283) and 2147483648 are not equal"
+                        }
+                }
+
+                @Test
+                fun deriveNonHardenedTest() {
+                        val kl =
+                                        helperStringToByteArray(
+                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
+                                        )
+                        val cc =
+                                        helperStringToByteArray(
+                                                        "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                        )
+                        val index = 0u
+
+                        val deriveNonHardenedExpectedOutcomeZZ =
+                                        helperStringToByteArray(
+                                                        "79,57,235,234,215,9,72,57,157,32,34,226,81,95,29,115,250,66,232,187,16,193,209,254,140,127,122,242,224,69,122,166,31,223,82,170,49,164,3,115,96,128,159,63,116,37,118,15,167,94,148,38,50,10,126,70,3,86,36,78,199,91,146,54"
+                                        )
+                        val deriveNonHardenedExpectedOutcomeChildChainCode =
+                                        helperStringToByteArray(
+                                                        "98,42,235,140,228,232,27,136,136,143,220,220,32,187,77,47,254,209,231,13,224,226,108,113,167,234,93,101,160,32,37,152,216,141,148,178,77,222,78,201,150,148,186,65,223,76,237,113,104,229,170,167,224,222,193,99,251,94,222,14,82,185,232,206"
+                                        )
+
+                        val (zProduced, cccProduced) = c.deriveNonHardened(kl, cc, index)
+
+                        assert(zProduced.contentEquals(deriveNonHardenedExpectedOutcomeZZ)) {
+                                "zProduced and deriveNonHardenedExpectedOutcomeZZ are not equal"
+                        }
+
+                        assert(
+                                        cccProduced.contentEquals(
+                                                        deriveNonHardenedExpectedOutcomeChildChainCode
+                                        )
+                        ) {
+                                "ccProduced and deriveNonHardenedExpectedOutcomeChainCode are not equal"
+                        }
+                }
+
+                @Test
+                fun derivedHardenedTest() {
+                        val c = ContextualApiCrypto(seedArray)
+
+                        val kl =
+                                        helperStringToByteArray(
+                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
+                                        )
+
+                        val kr =
+                                        helperStringToByteArray(
+                                                        "148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5"
+                                        )
+
+                        val cc =
+                                        helperStringToByteArray(
+                                                        "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                        )
+                        val index = c.harden(44u)
+
+                        val deriveHardenedExpectedOutcomeZZ =
+                                        helperStringToByteArray(
+                                                        "241,155,222,63,177,102,52,174,88,241,56,59,144,16,74,143,9,66,66,43,208,144,253,154,211,54,107,135,59,57,54,101,184,111,121,207,178,74,118,177,0,10,69,137,96,97,246,116,206,37,118,201,90,48,254,232,249,234,191,143,116,13,40,109"
+                                        )
+                        val deriveHardenedExpectedOutcomeChildChainCode =
+                                        helperStringToByteArray(
+                                                        "113,159,183,57,127,174,86,11,68,82,114,215,136,191,242,88,45,11,66,160,140,77,60,25,130,238,210,239,247,55,117,240,141,123,149,66,11,250,54,180,175,41,166,195,76,15,154,235,246,49,203,70,79,22,94,165,138,89,21,152,23,108,180,148"
+                                        )
+
+                        val (zProduced, cccProduced) = c.deriveHardened(kl, kr, cc, index)
+
+                        assert(zProduced.contentEquals(deriveHardenedExpectedOutcomeZZ)) {
+                                "zProduced and deriveHardenedExpectedOutcomeZZ are not equal"
+                        }
+
+                        assert(
+                                        cccProduced.contentEquals(
+                                                        deriveHardenedExpectedOutcomeChildChainCode
+                                        )
+                        ) {
+                                "ccProduced and deriveHardenedExpectedOutcomeChildChainCode are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc00Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "98,254,131,43,122,209,5,68,190,131,55,166,112,67,94,80,100,174,74,102,231,123,215,137,9,118,91,70,181,118,166,243"
+                                        )
+                        // derive key m'/44'/283'/0'/0/0"
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 0u, 0u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc01Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "83,4,97,0,46,172,206,192,199,181,121,89,37,170,16,74,127,180,95,133,239,10,169,91,187,91,233,59,111,133,55,173"
+                                        )
+                        // derive key m'/44'/283'/0'/0/1"
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 0u, 1u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc02Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "34,129,200,27,238,4,238,3,159,164,130,194,131,84,28,106,176,108,131,36,219,111,28,197,156,104,37,46,29,88,188,179"
+                                        )
+                        // derive key m'/44'/283'/0'/0/2
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 0u, 2u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc10Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "158,18,100,63,108,0,104,220,245,59,4,218,206,214,248,193,169,10,210,28,149,74,102,223,65,64,215,147,3,22,106,103"
+                                        )
+                        // derive key m'/44'/283'/1'/0/1"
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 1u, 0u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc11Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "25,254,250,164,39,200,166,251,76,248,11,184,72,233,192,195,122,162,191,76,177,156,245,172,149,21,186,30,109,152,140,186"
+                                        )
+                        // derive key m'/44'/283'/1'/0/1"
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 1u, 1u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc21Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "138,93,223,98,213,26,44,80,229,29,186,212,99,67,86,204,114,49,74,129,237,217,23,172,145,218,150,71,122,159,181,176"
+                                        )
+                        // derive key m'/44'/283'/2'/0/1
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 2u, 1u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenAcc30Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "35,88,224,242,180,101,171,62,143,85,19,157,131,22,101,77,75,227,158,187,34,54,125,54,64,159,208,42,32,176,224,23"
+                                        )
+                        // derive key m'/44'/283'/3'/0/0"
+                        val derivedPrivate = c.keyGen(KeyContext.Address, 3u, 0u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenId00Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "182,215,238,165,175,10,216,62,223,67,64,101,158,114,240,234,43,69,102,222,31,195,182,58,64,164,37,170,190,190,94,73"
+                                        )
+                        // derive key m'/44'/0'/0'/0/0
+                        val derivedPrivate = c.keyGen(KeyContext.Identity, 0u, 0u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenId01Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "181,206,198,118,197,162,18,158,209,190,66,35,162,112,36,57,187,178,70,47,215,123,67,242,126,47,121,253,25,74,48,162"
+                                        )
+                        // derive key m'/44'/0'/0'/0/1
+                        val derivedPrivate = c.keyGen(KeyContext.Identity, 0u, 1u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenId02Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "67,94,94,52,70,67,29,70,37,114,171,238,27,139,173,184,134,8,144,106,106,242,123,132,151,188,207,213,3,237,182,254"
+                                        )
+
+                        // derive key m'/44'/0'/0'/0/2
+                        val derivedPrivate = c.keyGen(KeyContext.Identity, 0u, 2u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenId10Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "191,99,190,131,255,249,188,157,10,235,194,49,213,3,66,17,14,82,32,36,126,80,222,55,107,71,225,84,181,211,42,62"
+                                        )
+                        // derive key m'/44'/0'/1'/0/0
+                        val derivedPrivate = c.keyGen(KeyContext.Identity, 1u, 0u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenId12Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "70,149,142,118,219,21,21,127,64,18,39,248,172,189,183,9,36,93,202,5,85,200,232,95,86,176,210,5,46,131,77,6"
+                                        )
+                        // derive key m'/44'/0'/1'/0/2"
+                        val derivedPrivate = c.keyGen(KeyContext.Identity, 1u, 2u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun keyGenId21Test() {
+                        val expectedKeyOutput =
+                                        helperStringToByteArray(
+                                                        "237,177,15,255,36,164,116,93,245,47,26,10,177,174,113,179,117,45,1,156,140,36,55,212,106,184,200,230,52,167,76,212"
+                                        )
+                        // derive key m'/44'/0'/2'/0/1
+                        val derivedPrivate = c.keyGen(KeyContext.Identity, 2u, 1u)
+                        assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
+                                "derivedPrivate and expectedKeyOutput are not equal"
+                        }
+                }
         }
 
         @Test
-        fun hardenTest() {
-            assert(c.harden(0u) == 2147483648u) { "harden(0) and 2147483648 are not equal" }
-            assert(c.harden(1u) == 2147483649u) { "harden(1) and 2147483648 are not equal" }
-            assert(c.harden(44u) == 2147483692u) { "harden(44) and 2147483648 are not equal" }
-            assert(c.harden(283u) == 2147483931u) { "harden(283) and 2147483648 are not equal" }
+        fun fromSeedBip39Test() {
+
+                // seedArray:
+                // 58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234
+
+                //////////
+                val seed =
+                                MnemonicCode(
+                                                "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
+                                )
+
+                // }
+                //
+                // For the seed above, the entropy is:
+                // -66,-97,-3,41,108,12,-54,-70,-33,81,-58,-5,-71,4,-103,91,24,45,106,-56,65,-127,-64,-115,-117,1,106,-79,-18,-3,120,-50]
+                // However, in the typescript tests, what's passed into fromSeed function is the
+                // array
+                // below. So how do we go from entropy above the value below?
+                //////////
+
+                // TODO: produce seedArray from seed using bip39 lib
+                val c = ContextualApiCrypto(seedArray)
+
+                val rootKey =
+                                c.fromSeed(
+                                                seedArray
+                                ) // Need to figure out how to go from phrase/entropy to that
+                val fromSeedExpectedOutput =
+                                helperStringToByteArray(
+                                                "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                )
+
+                assert(rootKey.contentEquals(fromSeedExpectedOutput)) {
+                        "rootKey and fromSeedExpectedOutput are not equal"
+                }
+
+                assert(rootKey.size == 96) { "rootKey size is not 96" }
         }
 
-        @Test
-        fun deriveNonHardenedTest() {
-            val kl =
-                    helperStringToByteArray(
-                            "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
-                    )
-            val cc =
-                    helperStringToByteArray(
-                            "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
-                    )
-            val index = 0u
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        internal class ECDHTests {
 
-            val deriveNonHardenedExpectedOutcomeZZ =
-                    helperStringToByteArray(
-                            "79,57,235,234,215,9,72,57,157,32,34,226,81,95,29,115,250,66,232,187,16,193,209,254,140,127,122,242,224,69,122,166,31,223,82,170,49,164,3,115,96,128,159,63,116,37,118,15,167,94,148,38,50,10,126,70,3,86,36,78,199,91,146,54"
-                    )
-            val deriveNonHardenedExpectedOutcomeChildChainCode =
-                    helperStringToByteArray(
-                            "98,42,235,140,228,232,27,136,136,143,220,220,32,187,77,47,254,209,231,13,224,226,108,113,167,234,93,101,160,32,37,152,216,141,148,178,77,222,78,201,150,148,186,65,223,76,237,113,104,229,170,167,224,222,193,99,251,94,222,14,82,185,232,206"
-                    )
+                private lateinit var alice: ContextualApiCrypto
+                private lateinit var bob: ContextualApiCrypto
 
-            val (zProduced, cccProduced) = c.deriveNonHardened(kl, cc, index)
+                @BeforeAll
+                fun setup() {
+                        val aliceSeed =
+                                        helperStringToByteArray(
+                                                        "250,218,209,237,184,13,81,24,213,243,205,138,50,233,66,156,89,25,93,27,233,217,142,232,32,9,244,213,227,226,176,97,104,107,153,85,22,65,82,124,64,137,31,205,147,48,131,90,11,121,56,111,194,192,90,135,207,74,16,171,168,84,252,76"
+                                        )
 
-            assert(zProduced.contentEquals(deriveNonHardenedExpectedOutcomeZZ)) {
-                "zProduced and deriveNonHardenedExpectedOutcomeZZ are not equal"
-            }
+                        val bobSeed =
+                                        helperStringToByteArray(
+                                                        "203,178,135,64,9,155,198,24,16,162,51,115,116,210,61,105,175,129,131,137,103,33,96,79,103,185,99,183,195,214,80,143,251,154,13,153,115,11,143,188,88,2,221,12,128,5,232,93,192,160,104,2,81,219,86,21,96,32,37,73,208,95,25,81"
+                                        )
 
-            assert(cccProduced.contentEquals(deriveNonHardenedExpectedOutcomeChildChainCode)) {
-                "ccProduced and deriveNonHardenedExpectedOutcomeChainCode are not equal"
-            }
+                        alice = ContextualApiCrypto(aliceSeed)
+                        bob = ContextualApiCrypto(bobSeed)
+                }
+
+                @Test
+                fun basicECDHTest() {
+                        val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
+                        val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
+
+                        val aliceSharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, true)
+                        val bobSharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, false)
+
+                        assertNotEquals(
+                                        aliceKey,
+                                        bobKey,
+                                        "alice's key and bob's key are unexpectedly equal"
+                        )
+
+                        assert(aliceSharedSecret.contentEquals(bobSharedSecret)) {
+                                "aliceSharedSecret and bobSharedSecret are not equal"
+                        }
+
+                        assert(
+                                        aliceSharedSecret.contentEquals(
+                                                        helperStringToByteArray(
+                                                                        "51,65,50,54,54,57,65,68,51,69,49,48,51,68,69,49,55,57,48,49,50,70,53,68,70,53,69,48,70,56,50,57,66,69,56,49,70,53,70,69,67,50,49,56,50,65,67,51,52,53,52,51,66,67,66,68,56,65,65,53,53,67,67,69"
+                                                        )
+                                        )
+                        ) { "produced shared secret does not correspond to hardcoded secret" }
+
+                        // Now we reverse pubkey order in concatenation
+                        val aliceSharedSecret2 =
+                                        alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, false)
+                        val bobSharedSecret2 = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, true)
+
+                        assertNotEquals(
+                                        aliceSharedSecret,
+                                        aliceSharedSecret2,
+                                        "despite different concat orders shared secrets are equal"
+                        )
+                        assertNotEquals(
+                                        bobSharedSecret,
+                                        bobSharedSecret2,
+                                        "despite different concat orders shared secrets are equal"
+                        )
+
+                        assert(aliceSharedSecret2.contentEquals(bobSharedSecret2)) {
+                                "aliceSharedSecret and bobSharedSecret are not equal"
+                        }
+
+                        assert(
+                                        aliceSharedSecret2.contentEquals(
+                                                        helperStringToByteArray(
+                                                                        "70,50,69,69,67,54,50,68,65,54,70,68,52,50,70,57,52,49,67,49,70,67,68,65,65,56,53,56,53,54,54,49,66,66,70,66,56,49,48,48,53,55,67,57,66,68,48,50,68,56,57,65,70,49,51,67,48,66,67,69,55,57,56,56"
+                                                        )
+                                        )
+                        ) {
+                                "produced second shared secret does not correspond to hardcoded secret"
+                        }
+
+                        // TODO: hash these values with another blake2d hash library to make sure
+                        // they conform
+                        // with the shared secrets produced by our library, and other platforms as
+                        // well
+                        // These are concatenations of shared point + alice's pubkey + bob's pubkey
+                        // and
+                        // shared point + bob's pubkey + alice's pubkey respectively
+
+                        // concat alice first bob second (183, 233, 120, 45, 238, 54, 131, 65, 238,
+                        // 144, 220,
+                        // 254, 152, 43,
+                        // 5, 106, 30, 224,
+                        // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 228, 135,
+                        // 197, 185, 34,
+                        // 66, 189, 8, 173, 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245,
+                        // 55, 107,
+                        // 171, 16, 72, 246, 29, 130, 140, 236, 107, 43, 205, 32, 195, 0, 181, 38,
+                        // 183, 171,
+                        // 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211, 203,
+                        // 0, 232, 151,
+                        // 154, 123, 168, 167, 116, )
+
+                        // concat bob first alice second  (183, 233, 120, 45, 238, 54, 131, 65, 238,
+                        // 144, 220,
+                        // 254, 152, 43,
+                        // 5, 106, 30, 224,
+                        // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 43, 205,
+                        // 32, 195, 0,
+                        // 181, 38, 183, 171, 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37,
+                        // 183, 46, 211,
+                        // 203, 0, 232, 151, 154, 123, 168, 167, 116, 228, 135, 197, 185, 34, 66,
+                        // 189, 8, 173,
+                        // 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107, 171,
+                        // 16, 72, 246,
+                        // 29, 130, 140, 236, 107, )
+                }
+
+                @Test
+                fun encryptDecryptECDHTest() {
+                        val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
+                        val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
+
+                        val aliceSharedSecret =
+                                        Key.fromBytes(
+                                                        alice.ECDH(
+                                                                        KeyContext.Address,
+                                                                        0u,
+                                                                        0u,
+                                                                        bobKey,
+                                                                        true
+                                                        )
+                                        )
+                        val bobSharedSecret =
+                                        Key.fromBytes(
+                                                        bob.ECDH(
+                                                                        KeyContext.Address,
+                                                                        0u,
+                                                                        0u,
+                                                                        aliceKey,
+                                                                        false
+                                                        )
+                                        )
+
+                        assert(aliceSharedSecret.asBytes.contentEquals(bobSharedSecret.asBytes)) {
+                                "aliceSharedSecret and bobSharedSecret are equal"
+                        }
+
+                        val message = "Hello World"
+                        val nonce =
+                                        helperStringToByteArray(
+                                                        "16,197,142,8,174,91,118,244,202,136,43,200,97,242,104,99,42,154,191,32,67,30,6,123"
+                                        )
+
+                        // Encrypt
+                        val ciphertext =
+                                        alice.lazySodium.cryptoSecretBoxEasy(
+                                                        message,
+                                                        nonce,
+                                                        aliceSharedSecret
+                                        )
+
+                        // Decrypt
+                        val plaintext =
+                                        alice.lazySodium.cryptoSecretBoxOpenEasy(
+                                                        ciphertext,
+                                                        nonce,
+                                                        aliceSharedSecret
+                                        )
+
+                        assert(
+                                        ciphertext.equals(
+                                                        "6E010FCA6C350392DC4893D148D77A788AA35638CB2A6341A0E5A4"
+                                        ),
+                        ) {
+                                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello World' message"
+                        }
+
+                        assert(message.contentEquals(plaintext)) {
+                                "message and decrypted plaintext are not equal"
+                        }
+                }
         }
 
-        @Test
-        fun derivedHardenedTest() {
-            val c = ContextualApiCrypto(seedArray)
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        internal class SignTypedDataTests {
+                private lateinit var c: ContextualApiCrypto
 
-            val kl =
-                    helperStringToByteArray(
-                            "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
-                    )
+                @BeforeAll
+                fun setup() {
+                        c = ContextualApiCrypto(seedArray)
+                }
 
-            val kr =
-                    helperStringToByteArray(
-                            "148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5"
-                    )
+                @Test
+                fun simpleSignDataTest() {
+                        val data = "Hello, World!".toByteArray()
 
-            val cc =
-                    helperStringToByteArray(
-                            "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
-                    )
-            val index = c.harden(44u)
+                        val pk = c.keyGen(KeyContext.Address, 0u, 0u)
+                        val signature = c.signData(KeyContext.Address, 0u, 0u, data, "")
+                        val isValid = c.verifyWithPublicKey(signature, data, pk)
+                        assert(isValid) { "signature is not valid" }
 
-            val deriveHardenedExpectedOutcomeZZ =
-                    helperStringToByteArray(
-                            "241,155,222,63,177,102,52,174,88,241,56,59,144,16,74,143,9,66,66,43,208,144,253,154,211,54,107,135,59,57,54,101,184,111,121,207,178,74,118,177,0,10,69,137,96,97,246,116,206,37,118,201,90,48,254,232,249,234,191,143,116,13,40,109"
-                    )
-            val deriveHardenedExpectedOutcomeChildChainCode =
-                    helperStringToByteArray(
-                            "113,159,183,57,127,174,86,11,68,82,114,215,136,191,242,88,45,11,66,160,140,77,60,25,130,238,210,239,247,55,117,240,141,123,149,66,11,250,54,180,175,41,166,195,76,15,154,235,246,49,203,70,79,22,94,165,138,89,21,152,23,108,180,148"
-                    )
-
-            val (zProduced, cccProduced) = c.deriveHardened(kl, kr, cc, index)
-
-            assert(zProduced.contentEquals(deriveHardenedExpectedOutcomeZZ)) {
-                "zProduced and deriveHardenedExpectedOutcomeZZ are not equal"
-            }
-
-            assert(cccProduced.contentEquals(deriveHardenedExpectedOutcomeChildChainCode)) {
-                "ccProduced and deriveHardenedExpectedOutcomeChildChainCode are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc00Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "98,254,131,43,122,209,5,68,190,131,55,166,112,67,94,80,100,174,74,102,231,123,215,137,9,118,91,70,181,118,166,243"
-                    )
-            // derive key m'/44'/283'/0'/0/0"
-            val derivedPrivate = c.keyGen(KeyContext.Address, 0u, 0u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc01Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "83,4,97,0,46,172,206,192,199,181,121,89,37,170,16,74,127,180,95,133,239,10,169,91,187,91,233,59,111,133,55,173"
-                    )
-            // derive key m'/44'/283'/0'/0/1"
-            val derivedPrivate = c.keyGen(KeyContext.Address, 0u, 1u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc02Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "34,129,200,27,238,4,238,3,159,164,130,194,131,84,28,106,176,108,131,36,219,111,28,197,156,104,37,46,29,88,188,179"
-                    )
-            // derive key m'/44'/283'/0'/0/2
-            val derivedPrivate = c.keyGen(KeyContext.Address, 0u, 2u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc10Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "158,18,100,63,108,0,104,220,245,59,4,218,206,214,248,193,169,10,210,28,149,74,102,223,65,64,215,147,3,22,106,103"
-                    )
-            // derive key m'/44'/283'/1'/0/1"
-            val derivedPrivate = c.keyGen(KeyContext.Address, 1u, 0u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc11Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "25,254,250,164,39,200,166,251,76,248,11,184,72,233,192,195,122,162,191,76,177,156,245,172,149,21,186,30,109,152,140,186"
-                    )
-            // derive key m'/44'/283'/1'/0/1"
-            val derivedPrivate = c.keyGen(KeyContext.Address, 1u, 1u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc21Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "138,93,223,98,213,26,44,80,229,29,186,212,99,67,86,204,114,49,74,129,237,217,23,172,145,218,150,71,122,159,181,176"
-                    )
-            // derive key m'/44'/283'/2'/0/1
-            val derivedPrivate = c.keyGen(KeyContext.Address, 2u, 1u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenAcc30Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "35,88,224,242,180,101,171,62,143,85,19,157,131,22,101,77,75,227,158,187,34,54,125,54,64,159,208,42,32,176,224,23"
-                    )
-            // derive key m'/44'/283'/3'/0/0"
-            val derivedPrivate = c.keyGen(KeyContext.Address, 3u, 0u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenId00Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "182,215,238,165,175,10,216,62,223,67,64,101,158,114,240,234,43,69,102,222,31,195,182,58,64,164,37,170,190,190,94,73"
-                    )
-            // derive key m'/44'/0'/0'/0/0
-            val derivedPrivate = c.keyGen(KeyContext.Identity, 0u, 0u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenId01Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "181,206,198,118,197,162,18,158,209,190,66,35,162,112,36,57,187,178,70,47,215,123,67,242,126,47,121,253,25,74,48,162"
-                    )
-            // derive key m'/44'/0'/0'/0/1
-            val derivedPrivate = c.keyGen(KeyContext.Identity, 0u, 1u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenId02Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "67,94,94,52,70,67,29,70,37,114,171,238,27,139,173,184,134,8,144,106,106,242,123,132,151,188,207,213,3,237,182,254"
-                    )
-
-            // derive key m'/44'/0'/0'/0/2
-            val derivedPrivate = c.keyGen(KeyContext.Identity, 0u, 2u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenId10Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "191,99,190,131,255,249,188,157,10,235,194,49,213,3,66,17,14,82,32,36,126,80,222,55,107,71,225,84,181,211,42,62"
-                    )
-            // derive key m'/44'/0'/1'/0/0
-            val derivedPrivate = c.keyGen(KeyContext.Identity, 1u, 0u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenId12Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "70,149,142,118,219,21,21,127,64,18,39,248,172,189,183,9,36,93,202,5,85,200,232,95,86,176,210,5,46,131,77,6"
-                    )
-            // derive key m'/44'/0'/1'/0/2"
-            val derivedPrivate = c.keyGen(KeyContext.Identity, 1u, 2u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-
-        @Test
-        fun keyGenId21Test() {
-            val expectedKeyOutput =
-                    helperStringToByteArray(
-                            "237,177,15,255,36,164,116,93,245,47,26,10,177,174,113,179,117,45,1,156,140,36,55,212,106,184,200,230,52,167,76,212"
-                    )
-            // derive key m'/44'/0'/2'/0/1
-            val derivedPrivate = c.keyGen(KeyContext.Identity, 2u, 1u)
-            assert(derivedPrivate.contentEquals(expectedKeyOutput)) {
-                "derivedPrivate and expectedKeyOutput are not equal"
-            }
-        }
-    }
-
-    @Test
-    fun fromSeedBip39Test() {
-
-        // seedArray:
-        // 58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234
-
-        //////////
-        val seed =
-                MnemonicCode(
-                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
-                )
-
-        // }
-        //
-        // For the seed above, the entropy is:
-        // -66,-97,-3,41,108,12,-54,-70,-33,81,-58,-5,-71,4,-103,91,24,45,106,-56,65,-127,-64,-115,-117,1,106,-79,-18,-3,120,-50]
-        // However, in the typescript tests, what's passed into fromSeed function is the array
-        // below. So how do we go from entropy above the value below?
-        //////////
-
-        // TODO: produce seedArray from seed using bip39 lib
-        val c = ContextualApiCrypto(seedArray)
-
-        val rootKey =
-                c.fromSeed(seedArray) // Need to figure out how to go from phrase/entropy to that
-        val fromSeedExpectedOutput =
-                helperStringToByteArray(
-                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
-                )
-
-        assert(rootKey.contentEquals(fromSeedExpectedOutput)) {
-            "rootKey and fromSeedExpectedOutput are not equal"
-        }
-
-        assert(rootKey.size == 96) { "rootKey size is not 96" }
-    }
-
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    internal class ECDHTests {
-
-        private lateinit var alice: ContextualApiCrypto
-        private lateinit var bob: ContextualApiCrypto
-
-        @BeforeAll
-        fun setup() {
-            val aliceSeed =
-                    helperStringToByteArray(
-                            "250,218,209,237,184,13,81,24,213,243,205,138,50,233,66,156,89,25,93,27,233,217,142,232,32,9,244,213,227,226,176,97,104,107,153,85,22,65,82,124,64,137,31,205,147,48,131,90,11,121,56,111,194,192,90,135,207,74,16,171,168,84,252,76"
-                    )
-
-            val bobSeed =
-                    helperStringToByteArray(
-                            "203,178,135,64,9,155,198,24,16,162,51,115,116,210,61,105,175,129,131,137,103,33,96,79,103,185,99,183,195,214,80,143,251,154,13,153,115,11,143,188,88,2,221,12,128,5,232,93,192,160,104,2,81,219,86,21,96,32,37,73,208,95,25,81"
-                    )
-
-            alice = ContextualApiCrypto(aliceSeed)
-            bob = ContextualApiCrypto(bobSeed)
-        }
-
-        @Test
-        fun basicECDHTest() {
-            val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
-            val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
-
-            val aliceSharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, true)
-            val bobSharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, false)
-
-            assertNotEquals(aliceKey, bobKey, "alice's key and bob's key are unexpectedly equal")
-
-            assert(aliceSharedSecret.contentEquals(bobSharedSecret)) {
-                "aliceSharedSecret and bobSharedSecret are not equal"
-            }
-
-            assert(
-                    aliceSharedSecret.contentEquals(
-                            helperStringToByteArray(
-                                    "51,65,50,54,54,57,65,68,51,69,49,48,51,68,69,49,55,57,48,49,50,70,53,68,70,53,69,48,70,56,50,57,66,69,56,49,70,53,70,69,67,50,49,56,50,65,67,51,52,53,52,51,66,67,66,68,56,65,65,53,53,67,67,69"
-                            )
-                    )
-            ) { "produced shared secret does not correspond to hardcoded secret" }
-
-            // Now we reverse pubkey order in concatenation
-            val aliceSharedSecret2 = alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, false)
-            val bobSharedSecret2 = bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, true)
-
-            assertNotEquals(
-                    aliceSharedSecret,
-                    aliceSharedSecret2,
-                    "despite different concat orders shared secrets are equal"
-            )
-            assertNotEquals(
-                    bobSharedSecret,
-                    bobSharedSecret2,
-                    "despite different concat orders shared secrets are equal"
-            )
-
-            assert(aliceSharedSecret2.contentEquals(bobSharedSecret2)) {
-                "aliceSharedSecret and bobSharedSecret are not equal"
-            }
-
-            assert(
-                    aliceSharedSecret2.contentEquals(
-                            helperStringToByteArray(
-                                    "70,50,69,69,67,54,50,68,65,54,70,68,52,50,70,57,52,49,67,49,70,67,68,65,65,56,53,56,53,54,54,49,66,66,70,66,56,49,48,48,53,55,67,57,66,68,48,50,68,56,57,65,70,49,51,67,48,66,67,69,55,57,56,56"
-                            )
-                    )
-            ) { "produced second shared secret does not correspond to hardcoded secret" }
-
-            // TODO: hash these values with another blake2d hash library to make sure they conform
-            // with the shared secrets produced by our library, and other platforms as well
-            // These are concatenations of shared point + alice's pubkey + bob's pubkey and
-            // shared point + bob's pubkey + alice's pubkey respectively
-
-            // concat alice first bob second (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220,
-            // 254, 152, 43,
-            // 5, 106, 30, 224,
-            // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 228, 135, 197, 185, 34,
-            // 66, 189, 8, 173, 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107,
-            // 171, 16, 72, 246, 29, 130, 140, 236, 107, 43, 205, 32, 195, 0, 181, 38, 183, 171,
-            // 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211, 203, 0, 232, 151,
-            // 154, 123, 168, 167, 116, )
-
-            // concat bob first alice second  (183, 233, 120, 45, 238, 54, 131, 65, 238, 144, 220,
-            // 254, 152, 43,
-            // 5, 106, 30, 224,
-            // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 43, 205, 32, 195, 0,
-            // 181, 38, 183, 171, 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211,
-            // 203, 0, 232, 151, 154, 123, 168, 167, 116, 228, 135, 197, 185, 34, 66, 189, 8, 173,
-            // 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107, 171, 16, 72, 246,
-            // 29, 130, 140, 236, 107, )
-        }
-
-        @Test
-        fun encryptDecryptECDHTest() {
-            val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u)
-            val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u)
-
-            val aliceSharedSecret =
-                    Key.fromBytes(alice.ECDH(KeyContext.Address, 0u, 0u, bobKey, true))
-            val bobSharedSecret =
-                    Key.fromBytes(bob.ECDH(KeyContext.Address, 0u, 0u, aliceKey, false))
-
-            assert(aliceSharedSecret.asBytes.contentEquals(bobSharedSecret.asBytes)) {
-                "aliceSharedSecret and bobSharedSecret are equal"
-            }
-
-            val message = "Hello World"
-            val nonce =
-                    helperStringToByteArray(
-                            "16,197,142,8,174,91,118,244,202,136,43,200,97,242,104,99,42,154,191,32,67,30,6,123"
-                    )
-
-            // Encrypt
-            val ciphertext = alice.lazySodium.cryptoSecretBoxEasy(message, nonce, aliceSharedSecret)
-
-            // Decrypt
-            val plaintext =
-                    alice.lazySodium.cryptoSecretBoxOpenEasy(ciphertext, nonce, aliceSharedSecret)
-
-            assert(
-                    ciphertext.equals("6E010FCA6C350392DC4893D148D77A788AA35638CB2A6341A0E5A4"),
-            ) {
-                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello World' message"
-            }
-
-            assert(message.contentEquals(plaintext)) {
-                "message and decrypted plaintext are not equal"
-            }
-        }
-    }
-
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    internal class SignTypedDataTests {
-        private lateinit var c: ContextualApiCrypto
-
-        @BeforeAll
-        fun setup() {
-            c = ContextualApiCrypto(seedArray)
-        }
-
-        @Test
-        fun simpleSignDataTest() {
-            val data = "Hello World".toByteArray()
-
-            val pubKey = c.keyGen(KeyContext.Address, 0u, 0u)
-            val signature = c.signData(KeyContext.Address, 0u, 0u, data, "")
-            val isValid = c.verifyWithPublicKey(signature, data, pubKey)
-            assert(isValid) { "signature is not valid" }
-
-            val pubKey2 = c.keyGen(KeyContext.Address, 0u, 1u)
-            assert(!c.verifyWithPublicKey(signature, data, pubKey2)) {
-                "signature is unexpectedly valid"
-            }
+                        val pk2 = c.keyGen(KeyContext.Address, 0u, 1u)
+                        assert(!c.verifyWithPublicKey(signature, data, pk2)) {
+                                "signature is unexpectedly valid"
+                        }
+                }
         }
 
         // @Test
         // fun signAuthChallengeTest() {
         //     val challenge = Random.nextBytes(ByteArray(32))
-        //     val path = Paths.get(ClassLoader.getSystemResource("auth.request.json").toURI())
+        //     val path =
+        // Paths.get(ClassLoader.getSystemResource("auth.request.json").toURI())
         //     val metadata = SignMetadata(Encoding.BASE64, authSchema)
 
         //     val encoded = Base64.getEncoder().encodeToString(Files.readAllBytes(path))
         // }
-    }
 }
