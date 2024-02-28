@@ -11,28 +11,21 @@ import com.goterl.lazysodium.utils.LibraryLoader
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import kotlinx.serialization.Serializable
+import net.pwall.json.schema.JSONSchema
 
 enum class KeyContext(val value: Int) {
     Address(0),
     Identity(1),
 }
 
-@Serializable data class ChannelKeys(val tx: ByteArray, val rx: ByteArray) {}
-
 enum class Encoding {
     CBOR,
     MSGPACK,
     BASE64,
     NONE
-}
-
-enum class GetMode {
-    Scalar,
-    PublicKey,
-    Raw
 }
 
 fun printer(input: ByteArray): String {
@@ -47,7 +40,7 @@ fun printer(input: ByteArray): String {
 
 const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
-@Serializable data class SignMetadata(val encoding: Encoding, val schema: Map<String, String>) {}
+data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
 class ContextualApiCrypto(private var seed: ByteArray) {
     val lazySodium: LazySodiumJava
@@ -56,13 +49,78 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY))
     }
 
-    fun harden(num: UInt): UInt = 0x80000000.toUInt() + num
+    companion object {
 
-    fun getBIP44PathFromContext(context: KeyContext, account: UInt, keyIndex: UInt): List<UInt> {
-        return when (context) {
-            KeyContext.Address -> listOf(harden(44u), harden(283u), harden(account), 0u, keyIndex)
-            KeyContext.Identity -> listOf(harden(44u), harden(0u), harden(account), 0u, keyIndex)
-            else -> throw IllegalArgumentException("Invalid context")
+        /**
+         * Harden a number (set the highest bit to 1) Note that the input is UInt and the output is
+         * also UInt
+         *
+         * @param num
+         * @returns
+         */
+        fun harden(num: UInt): UInt = 0x80000000.toUInt() + num
+
+        /*
+         * Get the BIP44 path from the context, account and keyIndex
+         *
+         * @param context
+         * @param account
+         * @param keyIndex
+         * @returns
+         */
+
+        fun getBIP44PathFromContext(
+                context: KeyContext,
+                account: UInt,
+                keyIndex: UInt
+        ): List<UInt> {
+            return when (context) {
+                KeyContext.Address ->
+                        listOf(harden(44u), harden(283u), harden(account), 0u, keyIndex)
+                KeyContext.Identity ->
+                        listOf(harden(44u), harden(0u), harden(account), 0u, keyIndex)
+                else -> throw IllegalArgumentException("Invalid context")
+            }
+        }
+
+        /**
+         * Implementation how to validate data with encoding and schema, using base64 as an example
+         *
+         * @param message
+         * @param metadata
+         * @returns
+         */
+        fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
+            // Check for Algorand tags
+            if (hasAlgorandTags(message)) {
+                return false // Assuming ERROR_TAGS_FOUND maps to false
+            }
+
+            val decoded: ByteArray =
+                    when (metadata.encoding) {
+                        Encoding.BASE64 -> Base64.getDecoder().decode(message)
+                        // Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
+                        Encoding.NONE -> message
+                        else -> throw IllegalArgumentException("Invalid encoding")
+                    }
+
+            // Check after decoding too
+            if (hasAlgorandTags(decoded)) {
+                return false
+            }
+
+            // Validate with schema
+            try {
+                return metadata.schema.validateBasic(String(decoded)).valid
+            } catch (e: Exception) {
+                return false
+            }
+        }
+
+        fun hasAlgorandTags(message: ByteArray): Boolean {
+            val prefixes = listOf("TX", "MX", "progData", "Program")
+            val messageString = String(message)
+            return prefixes.any { messageString.startsWith(it) }
         }
     }
 
@@ -343,7 +401,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         // if (result is Error) { // decoding errors
         //     throw result
         // }
-∂
+
         // if (!result) { // failed schema validation
         //     throw ERROR_BAD_DATA
         // }
@@ -382,50 +440,6 @@ class ContextualApiCrypto(private var seed: ByteArray) {
                         .reversedArray()
 
         return R + S
-    }
-
-    /**
-     * Impelemntation how to validate data with encoding and schema, using base64 as an example
-     *
-     * @param message
-     * @param metadata
-     * @returns
-     */
-    fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
-        // Check for Algorand tags
-        if (hasAlgorandTags(message)) {
-            return false // Assuming ERROR_TAGS_FOUND maps to false
-        }
-
-        val decoded: ByteArray =
-                when (metadata.encoding) {
-                    Encoding.BASE64 -> Base64.getDecoder().decode(message)
-                    Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
-                    Encoding.NONE -> message
-                    else -> throw IllegalArgumentException("Invalid encoding")
-                }
-
-        // Check after decoding too
-        if (hasAlgorandTags(decoded)) {
-            return false
-        }
-
-        // Validate with schema
-        val ajv = JsonSchemaFactory.byDefault()
-        val jsonNode = jacksonObjectMapper().readValue<JsonNode>(decoded)
-        val validationReport = ajv.getJsonSchema(metadata.schema).validate(jsonNode)
-
-        if (!validationReport.isSuccess) {
-            println(validationReport)
-        }
-
-        return validationReport.isSuccess
-    }
-
-    fun hasAlgorandTags(message: ByteArray): Boolean {
-        val prefixes = listOf("TX", "MX", "progData", "Program")
-        val messageString = String(message)
-        return prefixes.any { messageString.startsWith(it) }
     }
 
     /**

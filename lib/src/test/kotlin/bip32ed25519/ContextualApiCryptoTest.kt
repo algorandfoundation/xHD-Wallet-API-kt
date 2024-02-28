@@ -4,14 +4,18 @@
 package bip32ed25519
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
+import cash.z.ecc.android.bip39.toSeed
 import com.goterl.lazysodium.utils.Key
+import java.util.Base64
 import kotlin.collections.component1
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
+import net.pwall.json.schema.JSONSchema
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 
-// Helper function to convert a string of comma separated numbers to a byte array (to save space)
+// Helper function to convert a string of comma separated numbers to a byte array (to save space as
+// linter keeps placing each array value on a single row)
 fun helperStringToByteArray(input: String): ByteArray {
         return input.split(",")
                         .map { it.trim().toInt() }
@@ -19,11 +23,6 @@ fun helperStringToByteArray(input: String): ByteArray {
                         .map { it.toByte() }
                         .toByteArray()
 }
-
-val seedArray =
-                helperStringToByteArray(
-                                "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
-                )
 
 class ContextualApiCryptoTest {
 
@@ -34,21 +33,25 @@ class ContextualApiCryptoTest {
 
                 @BeforeAll
                 fun setup() {
-                        c = ContextualApiCrypto(seedArray)
+                        val seed =
+                                        MnemonicCode(
+                                                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
+                                        )
+                        c = ContextualApiCrypto(seed.toSeed())
                 }
 
                 @Test
                 fun hardenTest() {
-                        assert(c.harden(0u) == 2147483648u) {
+                        assert(ContextualApiCrypto.harden(0u) == 2147483648u) {
                                 "harden(0) and 2147483648 are not equal"
                         }
-                        assert(c.harden(1u) == 2147483649u) {
+                        assert(ContextualApiCrypto.harden(1u) == 2147483649u) {
                                 "harden(1) and 2147483648 are not equal"
                         }
-                        assert(c.harden(44u) == 2147483692u) {
+                        assert(ContextualApiCrypto.harden(44u) == 2147483692u) {
                                 "harden(44) and 2147483648 are not equal"
                         }
-                        assert(c.harden(283u) == 2147483931u) {
+                        assert(ContextualApiCrypto.harden(283u) == 2147483931u) {
                                 "harden(283) and 2147483648 are not equal"
                         }
                 }
@@ -91,8 +94,6 @@ class ContextualApiCryptoTest {
 
                 @Test
                 fun derivedHardenedTest() {
-                        val c = ContextualApiCrypto(seedArray)
-
                         val kl =
                                         helperStringToByteArray(
                                                         "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
@@ -107,7 +108,8 @@ class ContextualApiCryptoTest {
                                         helperStringToByteArray(
                                                         "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
                                         )
-                        val index = c.harden(44u)
+
+                        val index = ContextualApiCrypto.harden(44u)
 
                         val deriveHardenedExpectedOutcomeZZ =
                                         helperStringToByteArray(
@@ -307,30 +309,27 @@ class ContextualApiCryptoTest {
         @Test
         fun fromSeedBip39Test() {
 
-                // seedArray:
-                // 58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234
-
                 //////////
                 val seed =
                                 MnemonicCode(
                                                 "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                 )
 
-                // }
-                //
-                // For the seed above, the entropy is:
-                // -66,-97,-3,41,108,12,-54,-70,-33,81,-58,-5,-71,4,-103,91,24,45,106,-56,65,-127,-64,-115,-117,1,106,-79,-18,-3,120,-50]
-                // However, in the typescript tests, what's passed into fromSeed function is the
-                // array
-                // below. So how do we go from entropy above the value below?
-                //////////
+                assert(seed.toSeed().size == 64) { "seed size is not 64" }
+                assert(
+                                seed.toSeed()
+                                                .contentEquals(
+                                                                helperStringToByteArray(
+                                                                                "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
+                                                                )
+                                                )
+                ) { "seed mnemonic did not give expected bip39 seed" }
 
-                // TODO: produce seedArray from seed using bip39 lib
-                val c = ContextualApiCrypto(seedArray)
+                val c = ContextualApiCrypto(seed.toSeed())
 
                 val rootKey =
                                 c.fromSeed(
-                                                seedArray
+                                                seed.toSeed()
                                 ) // Need to figure out how to go from phrase/entropy to that
                 val fromSeedExpectedOutput =
                                 helperStringToByteArray(
@@ -526,12 +525,181 @@ class ContextualApiCryptoTest {
         }
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        internal class ValidateDataTests {
+
+                // Inspired by
+                // https://github.com/algorandfoundation/ARCs/blob/d44a8e9ecb62152d419f1b4ea50d72baba6b5ba3/assets/arc-0052/contextual.api.crypto.spec.ts#L218
+                // But how can that test be valid when it's a random byte? Not a JSON object?
+                // TODO: Get this to work
+
+                // @Test
+                // fun validateNonceDataTest() {
+                //         val challenge = Random.nextBytes(ByteArray(32))
+
+                //         val authSchema =
+                //
+                // JSONSchema.parseFile("src/test/resources/auth.request.json")
+
+                //         val metadata = SignMetadata(Encoding.NONE, authSchema)
+                //         val output = metadata.schema.validateBasic(String(challenge))
+                //         output.errors?.let { errors ->
+                //                 for (error in errors) {
+                //                         println(error)
+                //                 }
+                //         }
+                //         print(output)
+                //         print(output.valid)
+                //         // ContextualApiCrypto.validateData(challenge, metadata)
+                // }
+
+                // @Test
+                // fun validateNonceDataBas64Test() {
+                //         val challenge = Random.nextBytes(ByteArray(32))
+
+                //         val authSchema =
+                //
+                // JSONSchema.parseFile("src/test/resources/auth.request.json")
+
+                //         val metadata = SignMetadata(Encoding.BASE64, authSchema)
+
+                //         ContextualApiCrypto.validateData(
+                //                         Base64.getEncoder().encode(challenge),
+                //                         metadata
+                //         )
+                // }
+
+                @Test
+                fun validateMsgTest() {
+                        val message = """{"text":"Hello World"}"""
+                        val jsonSchema =
+                                        """
+                        {
+                                "type": "object",
+                                "properties": {
+                                        "text": {
+                                                "type": "string"
+                                        }
+                                },
+                                "required": ["text"]
+                        }
+                        """.trimIndent()
+
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.NONE, msgSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        message.toByteArray(),
+                                                        metadata
+                                        )
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateMsgHexTest() {
+                        val message = """{"text":"Hello World"}"""
+                        val jsonSchema =
+                                        """
+                        {
+                                "type": "object",
+                                "properties": {
+                                        "text": {
+                                                "type": "string"
+                                        }
+                                },
+                                "required": ["text"]
+                        }
+                        """.trimIndent()
+
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.BASE64, msgSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        Base64.getEncoder()
+                                                                        .encode(
+                                                                                        message.toByteArray()
+                                                                        ),
+                                                        metadata
+                                        )
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateMsgHexWrongEncodingFailedTest() {
+                        // Message is encoded as Base64, but Encoding is set to NONE
+
+                        val message = """{"text":"Hello World"}"""
+                        val jsonSchema =
+                                        """
+                        {
+                                "type": "object",
+                                "properties": {
+                                        "text": {
+                                                "type": "string"
+                                        }
+                                },
+                                "required": ["text"]
+                        }
+                        """.trimIndent()
+
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+
+                        val metadata = SignMetadata(Encoding.NONE, msgSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        Base64.getEncoder()
+                                                                        .encode(
+                                                                                        message.toByteArray()
+                                                                        ),
+                                                        metadata
+                                        )
+                        assert(!valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateMsgHexWrongMessageFailedTest() {
+                        // Schema expects "text" but message has "sentence" field name
+
+                        val message = """{"sentence":"Hello World"}"""
+                        val jsonSchema =
+                                        """
+                        {
+                                "type": "object",
+                                "properties": {
+                                        "text": {
+                                                "type": "string"
+                                        }
+                                },
+                                "required": ["text"]
+                        }
+                        """.trimIndent()
+
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+
+                        val metadata = SignMetadata(Encoding.NONE, msgSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        message.toByteArray(),
+                                                        metadata
+                                        )
+                        assert(!valid) { "validation failed, message not in line with schema" }
+                }
+        }
+
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class SignTypedDataTests {
                 private lateinit var c: ContextualApiCrypto
 
                 @BeforeAll
                 fun setup() {
-                        c = ContextualApiCrypto(seedArray)
+                        val seed =
+                                        MnemonicCode(
+                                                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
+                                        )
+                        c = ContextualApiCrypto(seed.toSeed())
                 }
 
                 @Test
