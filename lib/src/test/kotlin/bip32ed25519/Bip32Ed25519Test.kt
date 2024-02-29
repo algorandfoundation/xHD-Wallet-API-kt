@@ -24,12 +24,12 @@ fun helperStringToByteArray(input: String): ByteArray {
                         .toByteArray()
 }
 
-class ContextualApiCryptoTest {
+class Bip32Ed25519Test {
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class KeyGenTests {
 
-                private lateinit var c: ContextualApiCrypto
+                private lateinit var c: Bip32Ed25519
 
                 @BeforeAll
                 fun setup() {
@@ -37,21 +37,21 @@ class ContextualApiCryptoTest {
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
-                        c = ContextualApiCrypto(seed.toSeed())
+                        c = Bip32Ed25519(seed.toSeed())
                 }
 
                 @Test
                 fun hardenTest() {
-                        assert(ContextualApiCrypto.harden(0u) == 2147483648u) {
+                        assert(Bip32Ed25519.harden(0u) == 2147483648u) {
                                 "harden(0) and 2147483648 are not equal"
                         }
-                        assert(ContextualApiCrypto.harden(1u) == 2147483649u) {
+                        assert(Bip32Ed25519.harden(1u) == 2147483649u) {
                                 "harden(1) and 2147483648 are not equal"
                         }
-                        assert(ContextualApiCrypto.harden(44u) == 2147483692u) {
+                        assert(Bip32Ed25519.harden(44u) == 2147483692u) {
                                 "harden(44) and 2147483648 are not equal"
                         }
-                        assert(ContextualApiCrypto.harden(283u) == 2147483931u) {
+                        assert(Bip32Ed25519.harden(283u) == 2147483931u) {
                                 "harden(283) and 2147483648 are not equal"
                         }
                 }
@@ -109,7 +109,7 @@ class ContextualApiCryptoTest {
                                                         "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
                                         )
 
-                        val index = ContextualApiCrypto.harden(44u)
+                        val index = Bip32Ed25519.harden(44u)
 
                         val deriveHardenedExpectedOutcomeZZ =
                                         helperStringToByteArray(
@@ -325,7 +325,7 @@ class ContextualApiCryptoTest {
                                                 )
                 ) { "seed mnemonic did not give expected bip39 seed" }
 
-                val c = ContextualApiCrypto(seed.toSeed())
+                val c = Bip32Ed25519(seed.toSeed())
 
                 val rootKey =
                                 c.fromSeed(
@@ -346,8 +346,8 @@ class ContextualApiCryptoTest {
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class ECDHTests {
 
-                private lateinit var alice: ContextualApiCrypto
-                private lateinit var bob: ContextualApiCrypto
+                private lateinit var alice: Bip32Ed25519
+                private lateinit var bob: Bip32Ed25519
 
                 @BeforeAll
                 fun setup() {
@@ -361,8 +361,8 @@ class ContextualApiCryptoTest {
                                                         "203,178,135,64,9,155,198,24,16,162,51,115,116,210,61,105,175,129,131,137,103,33,96,79,103,185,99,183,195,214,80,143,251,154,13,153,115,11,143,188,88,2,221,12,128,5,232,93,192,160,104,2,81,219,86,21,96,32,37,73,208,95,25,81"
                                         )
 
-                        alice = ContextualApiCrypto(aliceSeed)
-                        bob = ContextualApiCrypto(bobSeed)
+                        alice = Bip32Ed25519(aliceSeed)
+                        bob = Bip32Ed25519(bobSeed)
                 }
 
                 @Test
@@ -420,42 +420,6 @@ class ContextualApiCryptoTest {
                         ) {
                                 "produced second shared secret does not correspond to hardcoded secret"
                         }
-
-                        // TODO: hash these values with another blake2d hash library to make sure
-                        // they conform
-                        // with the shared secrets produced by our library, and other platforms as
-                        // well
-                        // These are concatenations of shared point + alice's pubkey + bob's pubkey
-                        // and
-                        // shared point + bob's pubkey + alice's pubkey respectively
-
-                        // concat alice first bob second (183, 233, 120, 45, 238, 54, 131, 65, 238,
-                        // 144, 220,
-                        // 254, 152, 43,
-                        // 5, 106, 30, 224,
-                        // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 228, 135,
-                        // 197, 185, 34,
-                        // 66, 189, 8, 173, 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245,
-                        // 55, 107,
-                        // 171, 16, 72, 246, 29, 130, 140, 236, 107, 43, 205, 32, 195, 0, 181, 38,
-                        // 183, 171,
-                        // 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37, 183, 46, 211, 203,
-                        // 0, 232, 151,
-                        // 154, 123, 168, 167, 116, )
-
-                        // concat bob first alice second  (183, 233, 120, 45, 238, 54, 131, 65, 238,
-                        // 144, 220,
-                        // 254, 152, 43,
-                        // 5, 106, 30, 224,
-                        // 72, 43, 204, 198, 135, 88, 99, 90, 231, 249, 61, 95, 221, 72, 43, 205,
-                        // 32, 195, 0,
-                        // 181, 38, 183, 171, 235, 232, 189, 119, 175, 111, 176, 64, 206, 150, 37,
-                        // 183, 46, 211,
-                        // 203, 0, 232, 151, 154, 123, 168, 167, 116, 228, 135, 197, 185, 34, 66,
-                        // 189, 8, 173,
-                        // 177, 249, 55, 141, 136, 244, 91, 130, 210, 221, 12, 245, 55, 107, 171,
-                        // 16, 72, 246,
-                        // 29, 130, 140, 236, 107, )
                 }
 
                 @Test
@@ -547,11 +511,7 @@ class ContextualApiCryptoTest {
                                         JSONSchema.parseFile("src/test/resources/auth.request.json")
 
                         val metadata = SignMetadata(Encoding.NONE, authSchema)
-                        val valid =
-                                        ContextualApiCrypto.validateData(
-                                                        challenge.toByteArray(),
-                                                        metadata
-                                        )
+                        val valid = Bip32Ed25519.validateData(challenge.toByteArray(), metadata)
                         assert(valid) { "validation failed, message not in line with schema" }
                 }
 
@@ -573,7 +533,7 @@ class ContextualApiCryptoTest {
                         val metadata = SignMetadata(Encoding.BASE64, authSchema)
 
                         val valid =
-                                        ContextualApiCrypto.validateData(
+                                        Bip32Ed25519.validateData(
                                                         Base64.getEncoder()
                                                                         .encode(
                                                                                         challenge.toByteArray()
@@ -590,11 +550,7 @@ class ContextualApiCryptoTest {
                         val msgSchema = JSONSchema.parseFile("src/test/resources/msg.schema.json")
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
-                        val valid =
-                                        ContextualApiCrypto.validateData(
-                                                        message.toByteArray(),
-                                                        metadata
-                                        )
+                        val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
                         assert(valid) { "validation failed, message not in line with schema" }
                 }
 
@@ -606,7 +562,7 @@ class ContextualApiCryptoTest {
                         val metadata = SignMetadata(Encoding.BASE64, msgSchema)
 
                         val valid =
-                                        ContextualApiCrypto.validateData(
+                                        Bip32Ed25519.validateData(
                                                         Base64.getEncoder()
                                                                         .encode(
                                                                                         message.toByteArray()
@@ -634,11 +590,7 @@ class ContextualApiCryptoTest {
 
                         val metadata = SignMetadata(Encoding.NONE, authSchema)
 
-                        val valid =
-                                        ContextualApiCrypto.validateData(
-                                                        challenge.toByteArray(),
-                                                        metadata
-                                        )
+                        val valid = Bip32Ed25519.validateData(challenge.toByteArray(), metadata)
                         assert(!valid) { "validation failed, message not in line with schema" }
                 }
                 @Test
@@ -664,7 +616,7 @@ class ContextualApiCryptoTest {
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
                         val valid =
-                                        ContextualApiCrypto.validateData(
+                                        Bip32Ed25519.validateData(
                                                         Base64.getEncoder()
                                                                         .encode(
                                                                                         message.toByteArray()
@@ -696,11 +648,7 @@ class ContextualApiCryptoTest {
 
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
-                        val valid =
-                                        ContextualApiCrypto.validateData(
-                                                        message.toByteArray(),
-                                                        metadata
-                                        )
+                        val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
                         assert(!valid) { "validation failed, message not in line with schema" }
                 }
 
@@ -729,11 +677,7 @@ class ContextualApiCryptoTest {
 
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
-                        val valid =
-                                        ContextualApiCrypto.validateData(
-                                                        message.toByteArray(),
-                                                        metadata
-                                        )
+                        val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
                         assert(!valid) { "validation failed, message not in line with schema" }
                 }
 
@@ -763,18 +707,14 @@ class ContextualApiCryptoTest {
 
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
-                        val valid =
-                                        ContextualApiCrypto.validateData(
-                                                        message.toByteArray(),
-                                                        metadata
-                                        )
+                        val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
                         assert(valid) { "validation failed, message not in line with schema" }
                 }
         }
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class SignTypedDataTests {
-                private lateinit var c: ContextualApiCrypto
+                private lateinit var c: Bip32Ed25519
 
                 @BeforeAll
                 fun setup() {
@@ -782,7 +722,7 @@ class ContextualApiCryptoTest {
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
-                        c = ContextualApiCrypto(seed.toSeed())
+                        c = Bip32Ed25519(seed.toSeed())
                 }
 
                 @Test

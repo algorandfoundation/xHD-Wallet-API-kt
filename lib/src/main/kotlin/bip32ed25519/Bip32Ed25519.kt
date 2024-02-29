@@ -42,7 +42,7 @@ const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
 data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
-class ContextualApiCrypto(private var seed: ByteArray) {
+class Bip32Ed25519(private var seed: ByteArray) {
     val lazySodium: LazySodiumJava
 
     init {
@@ -534,7 +534,6 @@ class ContextualApiCrypto(private var seed: ByteArray) {
             concatenated = sharedPoint + otherPartyCurve25519Key + myCurve25519Key
         }
 
-        // TODO: ensure that the byteArray -> string -> byteArray conversion does not affect hash
         return this.lazySodium.cryptoGenericHash(String(concatenated)).toByteArray()
     }
 }
