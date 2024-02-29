@@ -11,16 +11,15 @@ import com.goterl.lazysodium.utils.LibraryLoader
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import kotlinx.serialization.Serializable
+import net.pwall.json.schema.JSONSchema
 
 enum class KeyContext(val value: Int) {
     Address(0),
     Identity(1),
 }
-
-@Serializable data class ChannelKeys(val tx: ByteArray, val rx: ByteArray) {}
 
 enum class Encoding {
     CBOR,
@@ -29,11 +28,7 @@ enum class Encoding {
     NONE
 }
 
-enum class GetMode {
-    Scalar,
-    PublicKey,
-    Raw
-}
+class DataValidationException(message: String) : Exception(message)
 
 fun printer(input: ByteArray): String {
     var s = "("
@@ -47,22 +42,88 @@ fun printer(input: ByteArray): String {
 
 const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
-@Serializable data class SignMetadata(val encoding: Encoding, val schema: Map<String, String>) {}
+data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
-class ContextualApiCrypto(private var seed: ByteArray) {
+class Bip32Ed25519(private var seed: ByteArray) {
     val lazySodium: LazySodiumJava
 
     init {
         this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY))
     }
 
-    fun harden(num: UInt): UInt = 0x80000000.toUInt() + num
+    companion object {
 
-    fun getBIP44PathFromContext(context: KeyContext, account: UInt, keyIndex: UInt): List<UInt> {
-        return when (context) {
-            KeyContext.Address -> listOf(harden(44u), harden(283u), harden(account), 0u, keyIndex)
-            KeyContext.Identity -> listOf(harden(44u), harden(0u), harden(account), 0u, keyIndex)
-            else -> throw IllegalArgumentException("Invalid context")
+        /**
+         * Harden a number (set the highest bit to 1) Note that the input is UInt and the output is
+         * also UInt
+         *
+         * @param num
+         * @returns
+         */
+        fun harden(num: UInt): UInt = 0x80000000.toUInt() + num
+
+        /*
+         * Get the BIP44 path from the context, account and keyIndex
+         *
+         * @param context
+         * @param account
+         * @param keyIndex
+         * @returns
+         */
+
+        fun getBIP44PathFromContext(
+                context: KeyContext,
+                account: UInt,
+                change: UInt,
+                keyIndex: UInt
+        ): List<UInt> {
+            return when (context) {
+                KeyContext.Address ->
+                        listOf(harden(44u), harden(283u), harden(account), change, keyIndex)
+                KeyContext.Identity ->
+                        listOf(harden(44u), harden(0u), harden(account), change, keyIndex)
+                else -> throw IllegalArgumentException("Invalid context")
+            }
+        }
+
+        /**
+         * Implementation how to validate data with encoding and schema, using base64 as an example
+         *
+         * @param message
+         * @param metadata
+         * @returns
+         */
+        fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
+            // Check for Algorand tags
+            if (hasAlgorandTags(message)) {
+                return false // Assuming ERROR_TAGS_FOUND maps to false
+            }
+
+            val decoded: ByteArray =
+                    when (metadata.encoding) {
+                        Encoding.BASE64 -> Base64.getDecoder().decode(message)
+                        // Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
+                        Encoding.NONE -> message
+                        else -> throw IllegalArgumentException("Invalid encoding")
+                    }
+
+            // Check after decoding too
+            if (hasAlgorandTags(decoded)) {
+                return false
+            }
+
+            // Validate with schema
+            try {
+                return metadata.schema.validateBasic(String(decoded)).valid
+            } catch (e: Exception) {
+                return false
+            }
+        }
+
+        fun hasAlgorandTags(message: ByteArray): Boolean {
+            val prefixes = listOf("TX", "MX", "progData", "Program")
+            val messageString = String(message)
+            return prefixes.any { messageString.startsWith(it) }
         }
     }
 
@@ -301,9 +362,9 @@ class ContextualApiCrypto(private var seed: ByteArray) {
      * @returns
      * - public key 32 bytes
      */
-    fun keyGen(context: KeyContext, account: UInt, keyIndex: UInt): ByteArray {
+    fun keyGen(context: KeyContext, account: UInt, change: UInt, keyIndex: UInt): ByteArray {
         val rootKey: ByteArray = fromSeed(this.seed)
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
 
         return this.deriveKey(rootKey, bip44Path, false)
     }
@@ -331,25 +392,24 @@ class ContextualApiCrypto(private var seed: ByteArray) {
     fun signData(
             context: KeyContext,
             account: UInt,
+            change: UInt,
             keyIndex: UInt,
             data: ByteArray,
-            metadata: Any, // SignMetadata
+            metadata: SignMetadata,
     ): ByteArray {
-        // validate data
 
-        // TODO: Re add this data validation logic
-        // val result = validateData(data, metadata)
+        val valid = validateData(data, metadata)
 
-        // if (result is Error) { // decoding errors
+        // if (valid is Error) { // decoding errors
         //     throw result
         // }
 
-        // if (!result) { // failed schema validation
-        //     throw ERROR_BAD_DATA
-        // }
+        if (!valid) { // failed schema validation
+            throw DataValidationException("Data validation failed")
+        }
 
         val rootKey: ByteArray = fromSeed(this.seed)
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
         val raw: ByteArray = deriveKey(rootKey, bip44Path, true)
 
         val scalar = raw.sliceArray(0 until 32)
@@ -359,74 +419,49 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         val publicKey = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
 
         // \(2): r = hash(c + msg) mod q [LE]
-        val rHash = MessageDigest.getInstance("SHA-512").digest(c + data)
-        val r = this.lazySodium.cryptoCoreEd25519ScalarReduce(rHash).toByteArray().reversedArray()
+        var r = this.safeModQ(MessageDigest.getInstance("SHA-512").digest(c + data))
 
         // \(4):  R = r * G (base point, no clamp)
         val R = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(r).toBytes()
 
-        var h = MessageDigest.getInstance("SHA-512").digest(R + publicKey + data)
-        h = this.lazySodium.cryptoCoreEd25519ScalarReduce(h).toByteArray().reversedArray()
+        var h = this.safeModQ(MessageDigest.getInstance("SHA-512").digest(R + publicKey + data))
 
         // \(5): S = (r + h * k) mod q
-        val S =
-                this.lazySodium
-                        .cryptoCoreEd25519ScalarAdd(
+        var S =
+                this.safeModQ(
+                        this.lazySodium.cryptoCoreEd25519ScalarAdd(
                                 r,
                                 this.lazySodium
                                         .cryptoCoreEd25519ScalarMul(h, scalar)
                                         .toByteArray()
                                         .reversedArray()
                         )
-                        .toByteArray()
-                        .reversedArray()
+                )
 
         return R + S
     }
 
-    /**
-     * Impelemntation how to validate data with encoding and schema, using base64 as an example
-     *
-     * @param message
-     * @param metadata
-     * @returns
+    /*
+     * SafeModQ is a helper function to ensure that the result of a mod q operation is 32 bytes
+     * It wraps around the cryptoCoreEd25519ScalarReduce function, which can accept either BigInteger or ByteArray
      */
-    // fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
-    //     // Check for Algorand tags
-    //     if (hasAlgorandTags(message)) {
-    //         return false // Assuming ERROR_TAGS_FOUND maps to false
-    //     }
+    fun safeModQ(input: BigInteger): ByteArray {
+        var reduced =
+                this.lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
+        if (reduced.size < 32) {
+            reduced = reduced + ByteArray(32 - reduced.size)
+        }
+        return reduced
+    }
 
-    //     val decoded: ByteArray =
-    //             when (metadata.encoding) {
-    //                 Encoding.BASE64 -> Base64.getDecoder().decode(message)
-    //                 Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
-    //                 Encoding.NONE -> message
-    //                 else -> throw IllegalArgumentException("Invalid encoding")
-    //             }
-
-    //     // Check after decoding too
-    //     if (hasAlgorandTags(decoded)) {
-    //         return false
-    //     }
-
-    //     // Validate with schema
-    //     val ajv = JsonSchemaFactory.byDefault()
-    //     val jsonNode = jacksonObjectMapper().readValue<JsonNode>(decoded)
-    //     val validationReport = ajv.getJsonSchema(metadata.schema).validate(jsonNode)
-
-    //     if (!validationReport.isSuccess) {
-    //         println(validationReport)
-    //     }
-
-    //     return validationReport.isSuccess
-    // }
-
-    // fun hasAlgorandTags(message: ByteArray): Boolean {
-    //     val prefixes = listOf("TX", "MX", "progData", "Program")
-    //     val messageString = String(message)
-    //     return prefixes.any { messageString.startsWith(it) }
-    // }
+    fun safeModQ(input: ByteArray): ByteArray {
+        var reduced =
+                this.lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
+        if (reduced.size < 32) {
+            reduced = reduced + ByteArray(32 - reduced.size)
+        }
+        return reduced
+    }
 
     /**
      * Wrapper around libsodium basic signature verification
@@ -475,6 +510,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
     fun ECDH(
             context: KeyContext,
             account: UInt,
+            change: UInt,
             keyIndex: UInt,
             otherPartyPub: ByteArray,
             meFirst: Boolean,
@@ -482,7 +518,7 @@ class ContextualApiCrypto(private var seed: ByteArray) {
 
         val rootKey: ByteArray = fromSeed(this.seed)
 
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
         val childPrivateKey: ByteArray = this.deriveKey(rootKey, bip44Path, true)
         val childPublicKey: ByteArray = this.deriveKey(rootKey, bip44Path, false)
 
@@ -503,7 +539,6 @@ class ContextualApiCrypto(private var seed: ByteArray) {
             concatenated = sharedPoint + otherPartyCurve25519Key + myCurve25519Key
         }
 
-        // TODO: ensure that the byteArray -> string -> byteArray conversion does not affect hash
         return this.lazySodium.cryptoGenericHash(String(concatenated)).toByteArray()
     }
 }
