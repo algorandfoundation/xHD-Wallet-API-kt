@@ -28,6 +28,8 @@ enum class Encoding {
     NONE
 }
 
+class DataValidationException(message: String) : Exception(message)
+
 fun printer(input: ByteArray): String {
     var s = "("
     for (i in input) {
@@ -72,13 +74,14 @@ class Bip32Ed25519(private var seed: ByteArray) {
         fun getBIP44PathFromContext(
                 context: KeyContext,
                 account: UInt,
+                change: UInt,
                 keyIndex: UInt
         ): List<UInt> {
             return when (context) {
                 KeyContext.Address ->
-                        listOf(harden(44u), harden(283u), harden(account), 0u, keyIndex)
+                        listOf(harden(44u), harden(283u), harden(account), change, keyIndex)
                 KeyContext.Identity ->
-                        listOf(harden(44u), harden(0u), harden(account), 0u, keyIndex)
+                        listOf(harden(44u), harden(0u), harden(account), change, keyIndex)
                 else -> throw IllegalArgumentException("Invalid context")
             }
         }
@@ -359,9 +362,9 @@ class Bip32Ed25519(private var seed: ByteArray) {
      * @returns
      * - public key 32 bytes
      */
-    fun keyGen(context: KeyContext, account: UInt, keyIndex: UInt): ByteArray {
+    fun keyGen(context: KeyContext, account: UInt, change: UInt, keyIndex: UInt): ByteArray {
         val rootKey: ByteArray = fromSeed(this.seed)
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
 
         return this.deriveKey(rootKey, bip44Path, false)
     }
@@ -389,6 +392,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
     fun signData(
             context: KeyContext,
             account: UInt,
+            change: UInt,
             keyIndex: UInt,
             data: ByteArray,
             metadata: SignMetadata,
@@ -401,11 +405,11 @@ class Bip32Ed25519(private var seed: ByteArray) {
         // }
 
         if (!valid) { // failed schema validation
-            throw Exception("Data validation failed")
+            throw DataValidationException("Data validation failed")
         }
 
         val rootKey: ByteArray = fromSeed(this.seed)
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
         val raw: ByteArray = deriveKey(rootKey, bip44Path, true)
 
         val scalar = raw.sliceArray(0 until 32)
@@ -506,6 +510,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
     fun ECDH(
             context: KeyContext,
             account: UInt,
+            change: UInt,
             keyIndex: UInt,
             otherPartyPub: ByteArray,
             meFirst: Boolean,
@@ -513,7 +518,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
 
         val rootKey: ByteArray = fromSeed(this.seed)
 
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
+        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
         val childPrivateKey: ByteArray = this.deriveKey(rootKey, bip44Path, true)
         val childPublicKey: ByteArray = this.deriveKey(rootKey, bip44Path, false)
 
