@@ -391,20 +391,18 @@ class ContextualApiCrypto(private var seed: ByteArray) {
             account: UInt,
             keyIndex: UInt,
             data: ByteArray,
-            metadata: Any, // SignMetadata
+            metadata: SignMetadata,
     ): ByteArray {
-        // validate data
 
-        // TODO: Re add this data validation logic
-        // val result = validateData(data, metadata)
+        val valid = validateData(data, metadata)
 
-        // if (result is Error) { // decoding errors
+        // if (valid is Error) { // decoding errors
         //     throw result
         // }
 
-        // if (!result) { // failed schema validation
-        //     throw ERROR_BAD_DATA
-        // }
+        if (!valid) { // failed schema validation
+            throw Exception("Data validation failed")
+        }
 
         val rootKey: ByteArray = fromSeed(this.seed)
         val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, keyIndex)
@@ -417,29 +415,48 @@ class ContextualApiCrypto(private var seed: ByteArray) {
         val publicKey = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
 
         // \(2): r = hash(c + msg) mod q [LE]
-        val rHash = MessageDigest.getInstance("SHA-512").digest(c + data)
-        val r = this.lazySodium.cryptoCoreEd25519ScalarReduce(rHash).toByteArray().reversedArray()
+        var r = this.safeModQ(MessageDigest.getInstance("SHA-512").digest(c + data))
 
         // \(4):  R = r * G (base point, no clamp)
         val R = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(r).toBytes()
 
-        var h = MessageDigest.getInstance("SHA-512").digest(R + publicKey + data)
-        h = this.lazySodium.cryptoCoreEd25519ScalarReduce(h).toByteArray().reversedArray()
+        var h = this.safeModQ(MessageDigest.getInstance("SHA-512").digest(R + publicKey + data))
 
         // \(5): S = (r + h * k) mod q
-        val S =
-                this.lazySodium
-                        .cryptoCoreEd25519ScalarAdd(
+        var S =
+                this.safeModQ(
+                        this.lazySodium.cryptoCoreEd25519ScalarAdd(
                                 r,
                                 this.lazySodium
                                         .cryptoCoreEd25519ScalarMul(h, scalar)
                                         .toByteArray()
                                         .reversedArray()
                         )
-                        .toByteArray()
-                        .reversedArray()
+                )
 
         return R + S
+    }
+
+    /*
+     * SafeModQ is a helper function to ensure that the result of a mod q operation is 32 bytes
+     * It wraps around the cryptoCoreEd25519ScalarReduce function, which can accept either BigInteger or ByteArray
+     */
+    fun safeModQ(input: BigInteger): ByteArray {
+        var reduced =
+                this.lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
+        if (reduced.size < 32) {
+            reduced = reduced + ByteArray(32 - reduced.size)
+        }
+        return reduced
+    }
+
+    fun safeModQ(input: ByteArray): ByteArray {
+        var reduced =
+                this.lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
+        if (reduced.size < 32) {
+            reduced = reduced + ByteArray(32 - reduced.size)
+        }
+        return reduced
     }
 
     /**

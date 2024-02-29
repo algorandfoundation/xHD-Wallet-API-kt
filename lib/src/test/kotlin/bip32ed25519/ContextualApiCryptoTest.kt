@@ -532,59 +532,62 @@ class ContextualApiCryptoTest {
                 // But how can that test be valid when it's a random byte? Not a JSON object?
                 // TODO: Get this to work
 
-                // @Test
-                // fun validateNonceDataTest() {
-                //         val challenge = Random.nextBytes(ByteArray(32))
+                @Test
+                fun validateNonceDataTest() {
+                        val challenge =
+                                        """
+                        {
+                                "0": 28, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                "29": 143, "30": 123, "31": 27
+                        }""".trimIndent()
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
 
-                //         val authSchema =
-                //
-                // JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.NONE, authSchema)
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        challenge.toByteArray(),
+                                                        metadata
+                                        )
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
 
-                //         val metadata = SignMetadata(Encoding.NONE, authSchema)
-                //         val output = metadata.schema.validateBasic(String(challenge))
-                //         output.errors?.let { errors ->
-                //                 for (error in errors) {
-                //                         println(error)
-                //                 }
-                //         }
-                //         print(output)
-                //         print(output.valid)
-                //         // ContextualApiCrypto.validateData(challenge, metadata)
-                // }
+                @Test
+                fun validateNonceDataBase64Test() {
+                        val challenge =
+                                        """
+                        {
+                                "0": 28, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                "29": 143, "30": 123, "31": 27
+                        }""".trimIndent()
 
-                // @Test
-                // fun validateNonceDataBas64Test() {
-                //         val challenge = Random.nextBytes(ByteArray(32))
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
 
-                //         val authSchema =
-                //
-                // JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.BASE64, authSchema)
 
-                //         val metadata = SignMetadata(Encoding.BASE64, authSchema)
-
-                //         ContextualApiCrypto.validateData(
-                //                         Base64.getEncoder().encode(challenge),
-                //                         metadata
-                //         )
-                // }
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        Base64.getEncoder()
+                                                                        .encode(
+                                                                                        challenge.toByteArray()
+                                                                        ),
+                                                        metadata
+                                        )
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
 
                 @Test
                 fun validateMsgTest() {
                         val message = """{"text":"Hello World"}"""
-                        val jsonSchema =
-                                        """
-                        {
-                                "type": "object",
-                                "properties": {
-                                        "text": {
-                                                "type": "string"
-                                        }
-                                },
-                                "required": ["text"]
-                        }
-                        """.trimIndent()
 
-                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val msgSchema = JSONSchema.parseFile("src/test/resources/msg.schema.json")
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
                         val valid =
@@ -598,20 +601,8 @@ class ContextualApiCryptoTest {
                 @Test
                 fun validateMsgHexTest() {
                         val message = """{"text":"Hello World"}"""
-                        val jsonSchema =
-                                        """
-                        {
-                                "type": "object",
-                                "properties": {
-                                        "text": {
-                                                "type": "string"
-                                        }
-                                },
-                                "required": ["text"]
-                        }
-                        """.trimIndent()
 
-                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val msgSchema = JSONSchema.parseFile("src/test/resources/msg.schema.json")
                         val metadata = SignMetadata(Encoding.BASE64, msgSchema)
 
                         val valid =
@@ -625,6 +616,31 @@ class ContextualApiCryptoTest {
                         assert(valid) { "validation failed, message not in line with schema" }
                 }
 
+                @Test
+                fun validateInvalidNonceDataTest() {
+                        // make one value larger than 255, the max according to the schema
+                        val challenge =
+                                        """
+                        {
+                                "0": 256, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                "29": 143, "30": 123, "31": 27
+                        }""".trimIndent()
+
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
+
+                        val metadata = SignMetadata(Encoding.NONE, authSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        challenge.toByteArray(),
+                                                        metadata
+                                        )
+                        assert(!valid) { "validation failed, message not in line with schema" }
+                }
                 @Test
                 fun validateMsgHexWrongEncodingFailedTest() {
                         // Message is encoded as Base64, but Encoding is set to NONE
@@ -659,7 +675,7 @@ class ContextualApiCryptoTest {
                 }
 
                 @Test
-                fun validateMsgHexWrongMessageFailedTest() {
+                fun validateMsgWrongMessageFailedTest() {
                         // Schema expects "text" but message has "sentence" field name
 
                         val message = """{"sentence":"Hello World"}"""
@@ -687,6 +703,73 @@ class ContextualApiCryptoTest {
                                         )
                         assert(!valid) { "validation failed, message not in line with schema" }
                 }
+
+                @Test
+                fun validateMsgMissingFieldFailedTest() {
+                        // Schema requires
+
+                        val message = """{"text":"Hello World"}"""
+                        val jsonSchema =
+                                        """
+                        {
+                                "type": "object",
+                                "properties": {
+                                        "text": {
+                                                "type": "string"
+                                        },
+                                        "i": {
+                                                "type": "integer"
+                                        }
+                                },
+                                "required": ["i"]
+                        }
+                        """.trimIndent()
+
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+
+                        val metadata = SignMetadata(Encoding.NONE, msgSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        message.toByteArray(),
+                                                        metadata
+                                        )
+                        assert(!valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateMsgExtraFieldFailedTest() {
+                        // Extra fields in message
+
+                        val message =
+                                        """{"text":"Hello World", "i": 10, "extra0": "test", "extra1": "test", "extra2": "test"}"""
+                        val jsonSchema =
+                                        """
+                        {
+                                "type": "object",
+                                "properties": {
+                                        "text": {
+                                                "type": "string"
+                                        },
+                                        "i": {
+                                                "type": "integer"
+                                        }
+                                },
+                                "required": ["text", "i"]
+                        }
+                        """.trimIndent()
+
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+
+                        val metadata = SignMetadata(Encoding.NONE, msgSchema)
+
+                        val valid =
+                                        ContextualApiCrypto.validateData(
+                                                        message.toByteArray(),
+                                                        metadata
+                                        )
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
         }
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -704,10 +787,52 @@ class ContextualApiCryptoTest {
 
                 @Test
                 fun simpleSignDataTest() {
-                        val data = "Hello, World!".toByteArray()
+                        // Message to sign
+
+                        val data = """{"text":"Hello, World!"}""".trimIndent().toByteArray()
 
                         val pk = c.keyGen(KeyContext.Address, 0u, 0u)
-                        val signature = c.signData(KeyContext.Address, 0u, 0u, data, "")
+
+                        val msgSchema = JSONSchema.parseFile("src/test/resources/msg.schema.json")
+                        val metadata = SignMetadata(Encoding.NONE, msgSchema)
+
+                        // Why does data work and data0 cause a problem calculating hk?
+                        val signature = c.signData(KeyContext.Address, 0u, 0u, data, metadata)
+
+                        val isValid = c.verifyWithPublicKey(signature, data, pk)
+                        assert(isValid) { "signature is not valid" }
+
+                        val pk2 = c.keyGen(KeyContext.Address, 0u, 1u)
+                        assert(!c.verifyWithPublicKey(signature, data, pk2)) {
+                                "signature is unexpectedly valid"
+                        }
+                }
+
+                @Test
+                fun signAuthChallengeTest() {
+                        // Randomly generated 32 length byteArray
+
+                        val data =
+                                        """
+                        {
+                                "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                "29": 143, "30": 123, "31": 27
+                        }"""
+                                                        .trimIndent()
+                                                        .toByteArray()
+
+                        val pk = c.keyGen(KeyContext.Address, 0u, 0u)
+
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.NONE, authSchema)
+
+                        // Why does data work and data0 cause a problem calculating hk?
+                        val signature = c.signData(KeyContext.Address, 0u, 0u, data, metadata)
+
                         val isValid = c.verifyWithPublicKey(signature, data, pk)
                         assert(isValid) { "signature is not valid" }
 
@@ -717,14 +842,4 @@ class ContextualApiCryptoTest {
                         }
                 }
         }
-
-        // @Test
-        // fun signAuthChallengeTest() {
-        //     val challenge = Random.nextBytes(ByteArray(32))
-        //     val path =
-        // Paths.get(ClassLoader.getSystemResource("auth.request.json").toURI())
-        //     val metadata = SignMetadata(Encoding.BASE64, authSchema)
-
-        //     val encoded = Base64.getEncoder().encodeToString(Files.readAllBytes(path))
-        // }
 }
