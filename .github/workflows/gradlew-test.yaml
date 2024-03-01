@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,3 +22,6 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test
+
+      - name: Run build
+        run: ./gradlew build
