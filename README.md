@@ -1,6 +1,12 @@
-# ed25519-bip32-kt
+# BIP32-ED25519-Kotlin
 
 A Kotlin implementation of ARC-0052 Algorand, in accordance with the paper BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace.
+
+Note that this library has not undergone audit and is not recommended for production use.
+
+## Dependencies
+
+This library uses a forked version of LazySodium-java that exposes Ed25519 operations. The .jar files can be found under /lib/libs/, or generated yourself from
 
 ## How to Use
 
