@@ -17,7 +17,7 @@
 
 package bip32ed25519
 
-// import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.cbor.Cbor
 
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
