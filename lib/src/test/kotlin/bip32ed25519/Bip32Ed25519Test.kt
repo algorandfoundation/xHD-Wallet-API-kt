@@ -617,6 +617,8 @@ class Bip32Ed25519Test {
                                         )
                         ) { "Signature different from expected" }
 
+                        assert(signature.size == 64) { "Signature size is not 64" }
+
                         val isValid = c.verifyWithPublicKey(signature, data, pk)
                         assert(isValid) { "signature is not valid" }
 
