@@ -530,16 +530,21 @@ class Bip32Ed25519(private var seed: ByteArray) {
 
         val rootKey: ByteArray = fromSeed(this.seed)
 
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
-        val childPrivateKey: ByteArray = this.deriveKey(rootKey, bip44Path, true)
-        val childPublicKey: ByteArray = this.deriveKey(rootKey, bip44Path, false)
+        val publicKey: ByteArray = this.keyGen(context, account, change, keyIndex)
+        val privateKey: ByteArray =
+                this.deriveKey(
+                        rootKey,
+                        getBIP44PathFromContext(context, account, change, keyIndex),
+                        true
+                )
 
-        val scalar: ByteArray = childPrivateKey.sliceArray(0 until 32)
+        val scalar: ByteArray = privateKey.sliceArray(0 until 32)
 
         val sharedPoint = ByteArray(32)
         val myCurve25519Key = ByteArray(32)
         val otherPartyCurve25519Key = ByteArray(32)
-        this.lazySodium.convertPublicKeyEd25519ToCurve25519(myCurve25519Key, childPublicKey)
+
+        this.lazySodium.convertPublicKeyEd25519ToCurve25519(myCurve25519Key, publicKey)
         this.lazySodium.convertPublicKeyEd25519ToCurve25519(otherPartyCurve25519Key, otherPartyPub)
         this.lazySodium.cryptoScalarMult(sharedPoint, scalar, otherPartyCurve25519Key)
 
@@ -551,6 +556,13 @@ class Bip32Ed25519(private var seed: ByteArray) {
             concatenated = sharedPoint + otherPartyCurve25519Key + myCurve25519Key
         }
 
-        return this.lazySodium.cryptoGenericHash(String(concatenated)).toByteArray()
+        val output = ByteArray(32)
+        this.lazySodium.cryptoGenericHash(
+                output,
+                32,
+                concatenated,
+                concatenated.size.toLong(),
+        )
+        return output
     }
 }
