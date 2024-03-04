@@ -609,6 +609,14 @@ class Bip32Ed25519Test {
 
                         val signature = c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
 
+                        assert(
+                                        signature.contentEquals(
+                                                        helperStringToByteArray(
+                                                                        "137,13,247,162,115,48,233,188,188,81,7,167,158,250,252,66,138,30,3,65,88,209,92,250,43,13,60,193,44,175,87,93,60,73,243,145,170,38,214,152,29,54,61,109,241,24,238,186,159,45,149,15,141,69,118,162,31,148,162,221,29,156,226,1"
+                                                        )
+                                        )
+                        ) { "Signature different from expected" }
+
                         val isValid = c.verifyWithPublicKey(signature, data, pk)
                         assert(isValid) { "signature is not valid" }
 
@@ -731,14 +739,16 @@ class Bip32Ed25519Test {
                 @BeforeAll
                 fun setup() {
                         val aliceSeed =
-                                        helperStringToByteArray(
-                                                        "250,218,209,237,184,13,81,24,213,243,205,138,50,233,66,156,89,25,93,27,233,217,142,232,32,9,244,213,227,226,176,97,104,107,153,85,22,65,82,124,64,137,31,205,147,48,131,90,11,121,56,111,194,192,90,135,207,74,16,171,168,84,252,76"
-                                        )
+                                        MnemonicCode(
+                                                                        "exact remain north lesson program series excess lava material second riot error boss planet brick rotate scrap army riot banner adult fashion casino bamboo".toCharArray()
+                                                        )
+                                                        .toSeed()
 
                         val bobSeed =
-                                        helperStringToByteArray(
-                                                        "203,178,135,64,9,155,198,24,16,162,51,115,116,210,61,105,175,129,131,137,103,33,96,79,103,185,99,183,195,214,80,143,251,154,13,153,115,11,143,188,88,2,221,12,128,5,232,93,192,160,104,2,81,219,86,21,96,32,37,73,208,95,25,81"
-                                        )
+                                        MnemonicCode(
+                                                                        "identify length ranch make silver fog much puzzle borrow relax occur drum blue oval book pledge reunion coral grace lamp recall fever route carbon".toCharArray()
+                                                        )
+                                                        .toSeed()
 
                         alice = Bip32Ed25519(aliceSeed)
                         bob = Bip32Ed25519(bobSeed)
@@ -767,7 +777,7 @@ class Bip32Ed25519Test {
                         assert(
                                         aliceSharedSecret.contentEquals(
                                                         helperStringToByteArray(
-                                                                        "51,65,50,54,54,57,65,68,51,69,49,48,51,68,69,49,55,57,48,49,50,70,53,68,70,53,69,48,70,56,50,57,66,69,56,49,70,53,70,69,67,50,49,56,50,65,67,51,52,53,52,51,66,67,66,68,56,65,65,53,53,67,67,69"
+                                                                        "48,53,49,55,65,48,57,66,49,57,55,67,55,56,56,55,66,55,70,53,48,51,55,55,50,53,54,65,53,65,69,69,56,55,67,54,67,56,55,52,69,65,56,48,57,67,68,55,68,55,67,52,53,52,55,54,67,54,50,51,57,48,51,51"
                                                         )
                                         )
                         ) { "produced shared secret does not correspond to hardcoded secret" }
@@ -796,7 +806,7 @@ class Bip32Ed25519Test {
                         assert(
                                         aliceSharedSecret2.contentEquals(
                                                         helperStringToByteArray(
-                                                                        "70,50,69,69,67,54,50,68,65,54,70,68,52,50,70,57,52,49,67,49,70,67,68,65,65,56,53,56,53,54,54,49,66,66,70,66,56,49,48,48,53,55,67,57,66,68,48,50,68,56,57,65,70,49,51,67,48,66,67,69,55,57,56,56"
+                                                                        "70,68,54,65,48,54,51,49,67,57,68,52,54,49,49,65,54,54,57,48,55,57,69,69,55,57,56,51,48,69,50,65,69,54,51,68,53,70,49,65,69,69,52,49,55,49,67,54,55,67,57,49,51,55,51,49,67,65,50,56,65,70,57,66"
                                                         )
                                         )
                         ) {
@@ -860,7 +870,7 @@ class Bip32Ed25519Test {
 
                         assert(
                                         ciphertext.equals(
-                                                        "6E010FCA6C350392DC4893D148D77A788AA35638CB2A6341A0E5A4"
+                                                        "F2E413A0C86757F60B56983E18953F6AB377E6B8388BDE8E558F75"
                                         ),
                         ) {
                                 "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello World' message"
