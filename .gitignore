@@ -31,7 +31,3 @@ build
 
 # But include the gradle-wrapper .jar file
 !gradle/wrapper/gradle-wrapper.jar
-
-# Include the .jar files that we import
-!lib/libs/*.jar
-
