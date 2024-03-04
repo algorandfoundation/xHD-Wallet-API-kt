@@ -40,6 +40,15 @@ fun helperStringToByteArray(input: String): ByteArray {
                         .toByteArray()
 }
 
+fun helperHexStringToByteArray(s: String): ByteArray {
+        val result = ByteArray(s.length / 2)
+        for (i in 0 until s.length step 2) {
+                val byte = s.substring(i, i + 2).toInt(16)
+                result[i / 2] = byte.toByte()
+        }
+        return result
+}
+
 class Bip32Ed25519Test {
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -751,20 +760,19 @@ class Bip32Ed25519Test {
                                                                         "identify length ranch make silver fog much puzzle borrow relax occur drum blue oval book pledge reunion coral grace lamp recall fever route carbon".toCharArray()
                                                         )
                                                         .toSeed()
-
                         alice = Bip32Ed25519(aliceSeed)
                         bob = Bip32Ed25519(bobSeed)
                 }
 
                 @Test
                 fun basicECDHTest() {
-                        val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
-                        val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u, 0u)
+                        val aliceKey = alice.keyGen(KeyContext.Identity, 0u, 0u, 0u)
+                        val bobKey = bob.keyGen(KeyContext.Identity, 0u, 0u, 0u)
 
                         val aliceSharedSecret =
-                                        alice.ECDH(KeyContext.Address, 0u, 0u, 0u, bobKey, true)
+                                        alice.ECDH(KeyContext.Identity, 0u, 0u, 0u, bobKey, true)
                         val bobSharedSecret =
-                                        bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, false)
+                                        bob.ECDH(KeyContext.Identity, 0u, 0u, 0u, aliceKey, false)
 
                         assertNotEquals(
                                         aliceKey,
@@ -779,16 +787,16 @@ class Bip32Ed25519Test {
                         assert(
                                         aliceSharedSecret.contentEquals(
                                                         helperStringToByteArray(
-                                                                        "48,53,49,55,65,48,57,66,49,57,55,67,55,56,56,55,66,55,70,53,48,51,55,55,50,53,54,65,53,65,69,69,56,55,67,54,67,56,55,52,69,65,56,48,57,67,68,55,68,55,67,52,53,52,55,54,67,54,50,51,57,48,51,51"
+                                                                        "202,114,20,173,185,153,18,48,253,145,160,157,145,158,198,130,178,172,151,129,183,110,32,107,75,135,244,221,110,246,66,127"
                                                         )
                                         )
                         ) { "produced shared secret does not correspond to hardcoded secret" }
 
                         // Now we reverse pubkey order in concatenation
                         val aliceSharedSecret2 =
-                                        alice.ECDH(KeyContext.Address, 0u, 0u, 0u, bobKey, false)
+                                        alice.ECDH(KeyContext.Identity, 0u, 0u, 0u, bobKey, false)
                         val bobSharedSecret2 =
-                                        bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, true)
+                                        bob.ECDH(KeyContext.Identity, 0u, 0u, 0u, aliceKey, true)
 
                         assertNotEquals(
                                         aliceSharedSecret,
@@ -808,7 +816,7 @@ class Bip32Ed25519Test {
                         assert(
                                         aliceSharedSecret2.contentEquals(
                                                         helperStringToByteArray(
-                                                                        "70,68,54,65,48,54,51,49,67,57,68,52,54,49,49,65,54,54,57,48,55,57,69,69,55,57,56,51,48,69,50,65,69,54,51,68,53,70,49,65,69,69,52,49,55,49,67,54,55,67,57,49,51,55,51,49,67,65,50,56,65,70,57,66"
+                                                                        "90,215,114,148,204,139,215,147,233,41,219,196,163,237,229,68,134,255,92,129,181,253,137,142,191,244,101,46,252,253,250,26"
                                                         )
                                         )
                         ) {
@@ -818,13 +826,13 @@ class Bip32Ed25519Test {
 
                 @Test
                 fun encryptDecryptECDHTest() {
-                        val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
-                        val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u, 0u)
+                        val aliceKey = alice.keyGen(KeyContext.Identity, 0u, 0u, 0u)
+                        val bobKey = bob.keyGen(KeyContext.Identity, 0u, 0u, 0u)
 
                         val aliceSharedSecret =
                                         Key.fromBytes(
                                                         alice.ECDH(
-                                                                        KeyContext.Address,
+                                                                        KeyContext.Identity,
                                                                         0u,
                                                                         0u,
                                                                         0u,
@@ -835,7 +843,7 @@ class Bip32Ed25519Test {
                         val bobSharedSecret =
                                         Key.fromBytes(
                                                         bob.ECDH(
-                                                                        KeyContext.Address,
+                                                                        KeyContext.Identity,
                                                                         0u,
                                                                         0u,
                                                                         0u,
@@ -848,7 +856,7 @@ class Bip32Ed25519Test {
                                 "aliceSharedSecret and bobSharedSecret are equal"
                         }
 
-                        val message = "Hello World"
+                        val message = "Hello, World!"
                         val nonce =
                                         helperStringToByteArray(
                                                         "16,197,142,8,174,91,118,244,202,136,43,200,97,242,104,99,42,154,191,32,67,30,6,123"
@@ -862,6 +870,29 @@ class Bip32Ed25519Test {
                                                         aliceSharedSecret
                                         )
 
+                        assert(
+                                        ciphertext.equals(
+                                                        "FB07303A391687989674F28A1A9B88FCA3D107227D87DADE662DFA3722"
+                                        ),
+                        ) {
+                                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello, World!' message"
+                        }
+
+                        // The hex string above is the same as the bytearray below.
+                        // This conversion is done for readability/visibility's sake,
+                        // when comparing with other language implementations
+
+                        assert(
+                                        helperHexStringToByteArray(ciphertext)
+                                                        .contentEquals(
+                                                                        helperStringToByteArray(
+                                                                                        "251,7,48,58,57,22,135,152,150,116,242,138,26,155,136,252,163,209,7,34,125,135,218,222,102,45,250,55,34"
+                                                                        )
+                                                        )
+                        ) {
+                                "produced ciphertext bytes is that what was expected given hardcoded ciphertext bytes"
+                        }
+
                         // Decrypt
                         val plaintext =
                                         alice.lazySodium.cryptoSecretBoxOpenEasy(
@@ -869,14 +900,6 @@ class Bip32Ed25519Test {
                                                         nonce,
                                                         aliceSharedSecret
                                         )
-
-                        assert(
-                                        ciphertext.equals(
-                                                        "F2E413A0C86757F60B56983E18953F6AB377E6B8388BDE8E558F75"
-                                        ),
-                        ) {
-                                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello World' message"
-                        }
 
                         assert(message.contentEquals(plaintext)) {
                                 "message and decrypted plaintext are not equal"
