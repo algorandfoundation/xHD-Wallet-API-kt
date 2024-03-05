@@ -93,13 +93,14 @@ class Bip32Ed25519(private var seed: ByteArray) {
         fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
             // Check for Algorand tags
             if (hasAlgorandTags(message)) {
-                return false // Assuming ERROR_TAGS_FOUND maps to false
+                return false
             }
 
             val decoded: ByteArray =
                     when (metadata.encoding) {
                         Encoding.BASE64 -> Base64.getDecoder().decode(message)
-                        // Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
+                        // Encoding.CBOR ->
+                        // Encoding.MSGPACK ->
                         Encoding.NONE -> message
                         else -> throw IllegalArgumentException("Invalid encoding")
                     }
@@ -118,7 +119,53 @@ class Bip32Ed25519(private var seed: ByteArray) {
         }
 
         fun hasAlgorandTags(message: ByteArray): Boolean {
-            val prefixes = listOf("TX", "MX", "progData", "Program")
+            // Prefixes taken from go-algorand node software code
+            // https://github.com/algorand/go-algorand/blob/master/protocol/hash.go
+            val prefixes =
+                    listOf(
+                            "appID",
+                            "arc",
+                            "aB",
+                            "aD",
+                            "aO",
+                            "aP",
+                            "aS",
+                            "AS",
+                            "B256",
+                            "BH",
+                            "BR",
+                            "CR",
+                            "GE",
+                            "KP",
+                            "MA",
+                            "MB",
+                            "MX",
+                            "NIC",
+                            "NIR",
+                            "NIV",
+                            "NPR",
+                            "OT1",
+                            "OT2",
+                            "PF",
+                            "PL",
+                            "Program",
+                            "ProgData",
+                            "PS",
+                            "PK",
+                            "SD",
+                            "SpecialAddr",
+                            "STIB",
+                            "spc",
+                            "spm",
+                            "spp",
+                            "sps",
+                            "spv",
+                            "TE",
+                            "TG",
+                            "TL",
+                            "TX",
+                            "VO"
+                    )
             val messageString = String(message)
             return prefixes.any { messageString.startsWith(it) }
         }
