@@ -9,25 +9,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: "11"
+          java-version: "21"
           distribution: "adopt"
+
+      - name: Install system-wide LibSodium
+        run: sudo apt-get install -y libsodium-dev
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Run Gradle Wrapper
+        run: chmod +x gradlew && gradle wrapper
 
-      - name: Run gradle wrapper
-        run: gradle wrapper
+      - name: Initialize Repo and Jars
+        run: chmod +x initialize.sh && ./initialize.sh
 
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew test --info
 
       - name: Run build
         run: ./gradlew build
