@@ -350,10 +350,8 @@ class Bip32Ed25519Test {
                                                 )
                 ) { "seed mnemonic did not give expected bip39 seed" }
 
-                val c = Bip32Ed25519(seed.toSeed())
-
                 val rootKey =
-                                c.fromSeed(
+                                Bip32Ed25519.fromSeed(
                                                 seed.toSeed()
                                 ) // Need to figure out how to go from phrase/entropy to that
                 val fromSeedExpectedOutput =
@@ -795,8 +793,10 @@ class Bip32Ed25519Test {
                         // Now we reverse pubkey order in concatenation
                         val aliceSharedSecret2 =
                                         alice.ECDH(KeyContext.Identity, 0u, 0u, 0u, bobKey, false)
+                        alice.ECDH(KeyContext.Identity, 0u, 0u, 0u, bobKey, false)
                         val bobSharedSecret2 =
                                         bob.ECDH(KeyContext.Identity, 0u, 0u, 0u, aliceKey, true)
+                        bob.ECDH(KeyContext.Identity, 0u, 0u, 0u, aliceKey, true)
 
                         assertNotEquals(
                                         aliceSharedSecret,
@@ -864,7 +864,7 @@ class Bip32Ed25519Test {
 
                         // Encrypt
                         val ciphertext =
-                                        alice.lazySodium.cryptoSecretBoxEasy(
+                                        Bip32Ed25519.lazySodium.cryptoSecretBoxEasy(
                                                         message,
                                                         nonce,
                                                         aliceSharedSecret
@@ -893,9 +893,32 @@ class Bip32Ed25519Test {
                                 "produced ciphertext bytes is that what was expected given hardcoded ciphertext bytes"
                         }
 
+                        assert(
+                                        ciphertext.equals(
+                                                        "FB07303A391687989674F28A1A9B88FCA3D107227D87DADE662DFA3722"
+                                        ),
+                        ) {
+                                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello, World!' message"
+                        }
+
+                        // The hex string above is the same as the bytearray below.
+                        // This conversion is done for readability/visibility's sake,
+                        // when comparing with other language implementations
+
+                        assert(
+                                        helperHexStringToByteArray(ciphertext)
+                                                        .contentEquals(
+                                                                        helperStringToByteArray(
+                                                                                        "251,7,48,58,57,22,135,152,150,116,242,138,26,155,136,252,163,209,7,34,125,135,218,222,102,45,250,55,34"
+                                                                        )
+                                                        )
+                        ) {
+                                "produced ciphertext bytes is that what was expected given hardcoded ciphertext bytes"
+                        }
+
                         // Decrypt
                         val plaintext =
-                                        alice.lazySodium.cryptoSecretBoxOpenEasy(
+                                        Bip32Ed25519.lazySodium.cryptoSecretBoxOpenEasy(
                                                         ciphertext,
                                                         nonce,
                                                         aliceSharedSecret

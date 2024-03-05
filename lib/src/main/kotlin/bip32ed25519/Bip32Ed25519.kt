@@ -42,28 +42,16 @@ enum class Encoding {
 
 class DataValidationException(message: String) : Exception(message)
 
-fun printer(input: ByteArray): String {
-    var s = "("
-    for (i in input) {
-        val k = if (i < 0) i + 256 else i
-        s += "${k}, "
-    }
-    s += ")"
-    return s
-}
-
 const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
 data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
 class Bip32Ed25519(private var seed: ByteArray) {
-    val lazySodium: LazySodiumJava
-
-    init {
-        this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
-    }
-
     companion object {
+
+        // Load it once statically and use it for the lifetime of the application
+        val lazySodium: LazySodiumJava =
+                LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
 
         /**
          * Harden a number (set the highest bit to 1) Note that the input is UInt and the output is
@@ -94,7 +82,6 @@ class Bip32Ed25519(private var seed: ByteArray) {
                         listOf(harden(44u), harden(283u), harden(account), change, keyIndex)
                 KeyContext.Identity ->
                         listOf(harden(44u), harden(0u), harden(account), change, keyIndex)
-                else -> throw IllegalArgumentException("Invalid context")
             }
         }
 
@@ -137,53 +124,53 @@ class Bip32Ed25519(private var seed: ByteArray) {
             val messageString = String(message)
             return prefixes.any { messageString.startsWith(it) }
         }
-    }
 
-    /**
-     * Reference of BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace
-     *
-     * @see section V. BIP32-Ed25519: Specification;
-     *
-     * A) Root keys
-     *
-     * @param seed
-     * - 256 bite seed generated from BIP39 Mnemonic
-     * @returns
-     * - Extended root key (kL, kR, c) where kL is the left 32 bytes of the root key, kR is the
-     * right 32 bytes of the root key, and c is the chain code. Total 96 bytes
-     */
-    fun fromSeed(seed: ByteArray): ByteArray {
-        // k = H512(seed)
-        var k = MessageDigest.getInstance("SHA-512").digest(seed)
-        var kL = k.sliceArray(0 until 32)
-        var kR = k.sliceArray(32 until 64)
+        /**
+         * Reference of BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace
+         *
+         * @see section V. BIP32-Ed25519: Specification;
+         *
+         * A) Root keys
+         *
+         * @param seed
+         * - 256 bite seed generated from BIP39 Mnemonic
+         * @returns
+         * - Extended root key (kL, kR, c) where kL is the left 32 bytes of the root key, kR is the
+         * right 32 bytes of the root key, and c is the chain code. Total 96 bytes
+         */
+        fun fromSeed(seed: ByteArray): ByteArray {
+            // k = H512(seed)
+            var k = MessageDigest.getInstance("SHA-512").digest(seed)
+            var kL = k.sliceArray(0 until 32)
+            var kR = k.sliceArray(32 until 64)
 
-        // While the third highest bit of the last byte of kL is not zero
-        while (kL[31].toInt() and 0b00100000 != 0) {
-            val hmac = Mac.getInstance("HmacSHA512")
-            hmac.init(SecretKeySpec(kL, "HmacSHA512"))
-            k = hmac.doFinal(kR)
-            kL = k.sliceArray(0 until 32)
-            kR = k.sliceArray(32 until 64)
+            // While the third highest bit of the last byte of kL is not zero
+            while (kL[31].toInt() and 0b00100000 != 0) {
+                val hmac = Mac.getInstance("HmacSHA512")
+                hmac.init(SecretKeySpec(kL, "HmacSHA512"))
+                k = hmac.doFinal(kR)
+                kL = k.sliceArray(0 until 32)
+                kR = k.sliceArray(32 until 64)
+            }
+
+            // clamp
+            // Set the bits in kL as follows:
+            // little Endianess
+            kL[0] =
+                    (kL[0].toInt() and 0b11111000)
+                            .toByte() // the lowest 3 bits of the first byte of kL are cleared
+            kL[31] =
+                    (kL[31].toInt() and 0b01111111)
+                            .toByte() // the highest bit of the last byte is cleared
+            kL[31] =
+                    (kL[31].toInt() or 0b01000000)
+                            .toByte() // the second highest bit of the last byte is set
+
+            // chain root code
+            // SHA256(0x01||k)
+            val c = MessageDigest.getInstance("SHA-256").digest(byteArrayOf(0x01) + seed)
+            return kL + kR + c
         }
-
-        // clamp
-        // Set the bits in kL as follows:
-        // little Endianess
-        kL[0] =
-                (kL[0].toInt() and 0b11111000)
-                        .toByte() // the lowest 3 bits of the first byte of kL are cleared
-        kL[31] =
-                (kL[31].toInt() and 0b01111111)
-                        .toByte() // the highest bit of the last byte is cleared
-        kL[31] =
-                (kL[31].toInt() or 0b01000000)
-                        .toByte() // the second highest bit of the last byte is set
-
-        // chain root code
-        // SHA256(0x01||k)
-        val c = MessageDigest.getInstance("SHA-256").digest(byteArrayOf(0x01) + seed)
-        return kL + kR + c
     }
 
     /**
@@ -207,7 +194,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
         val data = ByteBuffer.allocate(1 + 32 + 4)
         data.put(1 + 32, index.toByte())
 
-        val pk = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(kl).toBytes()
+        val pk = lazySodium.cryptoScalarMultEd25519BaseNoclamp(kl).toBytes()
         data.position(1)
         data.put(pk)
 
@@ -344,7 +331,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
         // Example:
         // val nodeScalar: ByteArray = derived.sliceArray(0 until 32)
         // val nodePublic: ByteArray =
-        // this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(nodeScalar).toBytes()
+        // lazySodium.cryptoScalarMultEd25519BaseNoclamp(nodeScalar).toBytes()
         // val nodeCC: ByteArray = derived.sliceArray(64 until 96)
 
         // // [Public][ChainCode]
@@ -357,7 +344,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
         if (isPrivate) {
             return derived
         } else {
-            return this.lazySodium
+            return lazySodium
                     .cryptoScalarMultEd25519BaseNoclamp(derived.sliceArray(0 until 32))
                     .toBytes()
         }
@@ -428,22 +415,22 @@ class Bip32Ed25519(private var seed: ByteArray) {
         val c = raw.sliceArray(32 until 64)
 
         // \(1): pubKey = scalar * G (base point, no clamp)
-        val publicKey = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
+        val publicKey = lazySodium.cryptoScalarMultEd25519BaseNoclamp(scalar).toBytes()
 
         // \(2): r = hash(c + msg) mod q [LE]
         var r = this.safeModQ(MessageDigest.getInstance("SHA-512").digest(c + data))
 
         // \(4):  R = r * G (base point, no clamp)
-        val R = this.lazySodium.cryptoScalarMultEd25519BaseNoclamp(r).toBytes()
+        val R = lazySodium.cryptoScalarMultEd25519BaseNoclamp(r).toBytes()
 
         var h = this.safeModQ(MessageDigest.getInstance("SHA-512").digest(R + publicKey + data))
 
         // \(5): S = (r + h * k) mod q
         var S =
                 this.safeModQ(
-                        this.lazySodium.cryptoCoreEd25519ScalarAdd(
+                        lazySodium.cryptoCoreEd25519ScalarAdd(
                                 r,
-                                this.lazySodium
+                                lazySodium
                                         .cryptoCoreEd25519ScalarMul(h, scalar)
                                         .toByteArray()
                                         .reversedArray()
@@ -458,8 +445,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
      * It wraps around the cryptoCoreEd25519ScalarReduce function, which can accept either BigInteger or ByteArray
      */
     fun safeModQ(input: BigInteger): ByteArray {
-        var reduced =
-                this.lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
+        var reduced = lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
         if (reduced.size < 32) {
             reduced = reduced + ByteArray(32 - reduced.size)
         }
@@ -467,8 +453,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
     }
 
     fun safeModQ(input: ByteArray): ByteArray {
-        var reduced =
-                this.lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
+        var reduced = lazySodium.cryptoCoreEd25519ScalarReduce(input).toByteArray().reversedArray()
         if (reduced.size < 32) {
             reduced = reduced + ByteArray(32 - reduced.size)
         }
@@ -493,7 +478,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
             message: ByteArray,
             publicKey: ByteArray
     ): Boolean {
-        return this.lazySodium.cryptoSignVerifyDetached(signature, message, message.size, publicKey)
+        return lazySodium.cryptoSignVerifyDetached(signature, message, message.size, publicKey)
     }
 
     /**
@@ -544,9 +529,9 @@ class Bip32Ed25519(private var seed: ByteArray) {
         val myCurve25519Key = ByteArray(32)
         val otherPartyCurve25519Key = ByteArray(32)
 
-        this.lazySodium.convertPublicKeyEd25519ToCurve25519(myCurve25519Key, publicKey)
-        this.lazySodium.convertPublicKeyEd25519ToCurve25519(otherPartyCurve25519Key, otherPartyPub)
-        this.lazySodium.cryptoScalarMult(sharedPoint, scalar, otherPartyCurve25519Key)
+        lazySodium.convertPublicKeyEd25519ToCurve25519(myCurve25519Key, publicKey)
+        lazySodium.convertPublicKeyEd25519ToCurve25519(otherPartyCurve25519Key, otherPartyPub)
+        lazySodium.cryptoScalarMult(sharedPoint, scalar, otherPartyCurve25519Key)
 
         val concatenated: ByteArray
 
@@ -557,7 +542,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
         }
 
         val output = ByteArray(32)
-        this.lazySodium.cryptoGenericHash(
+        lazySodium.cryptoGenericHash(
                 output,
                 32,
                 concatenated,
