@@ -60,7 +60,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
     val lazySodium: LazySodiumJava
 
     init {
-        this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY))
+        this.lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
     }
 
     companion object {
