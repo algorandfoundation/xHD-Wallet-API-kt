@@ -4,9 +4,27 @@ A Kotlin implementation of ARC-0052 Algorand, in accordance with the paper BIP32
 
 Note that this library has not undergone audit and is not recommended for production use.
 
-## Dependencies
+## Installation
 
-This library uses a forked version of LazySodium-java that exposes Ed25519 operations. The .jar files can be found under /lib/libs/, or generated yourself from
+This library uses a forked version of LazySodium-Java that exposes Ed25519 operations. The fork has been added as a Git Submodule. It needs to be initialized, built and have its .jar files moved into lib/libs at the root level of this repository.
+
+```bash
+./initialize.sh
+```
+
+### Note: For Linux Users
+
+LazySodium-Java bundles up the LibSodium binaries and expose them as part of the .jar files. By default this library will attempt to use the bundled up binaries, but falls back to any system-wide installation of LibSodium.
+
+Currently there is an issue on Linux that means Linux-users will need to rely on a system-wide installation of LibSodium.
+
+For Debian-based Linux distros:
+
+```bash
+apt-get install -y libsodium-dev
+```
+
+You might be required to install using `sudo` privileges.
 
 ## How to Use
 
