@@ -42,8 +42,6 @@ enum class Encoding {
 
 class DataValidationException(message: String) : Exception(message)
 
-const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
-
 data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
 class Bip32Ed25519(private var seed: ByteArray) {
