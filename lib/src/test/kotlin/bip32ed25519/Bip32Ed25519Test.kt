@@ -862,7 +862,7 @@ class Bip32Ed25519Test {
 
                         // Encrypt
                         val ciphertext =
-                                        alice.lazySodium.cryptoSecretBoxEasy(
+                                        Bip32Ed25519.lazySodium.cryptoSecretBoxEasy(
                                                         message,
                                                         nonce,
                                                         aliceSharedSecret
@@ -893,7 +893,7 @@ class Bip32Ed25519Test {
 
                         // Decrypt
                         val plaintext =
-                                        alice.lazySodium.cryptoSecretBoxOpenEasy(
+                                        Bip32Ed25519.lazySodium.cryptoSecretBoxOpenEasy(
                                                         ciphertext,
                                                         nonce,
                                                         aliceSharedSecret
