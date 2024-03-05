@@ -350,10 +350,8 @@ class Bip32Ed25519Test {
                                                 )
                 ) { "seed mnemonic did not give expected bip39 seed" }
 
-                val c = Bip32Ed25519(seed.toSeed())
-
                 val rootKey =
-                                c.fromSeed(
+                                Bip32Ed25519.fromSeed(
                                                 seed.toSeed()
                                 ) // Need to figure out how to go from phrase/entropy to that
                 val fromSeedExpectedOutput =

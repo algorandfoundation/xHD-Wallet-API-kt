@@ -42,16 +42,6 @@ enum class Encoding {
 
 class DataValidationException(message: String) : Exception(message)
 
-fun printer(input: ByteArray): String {
-    var s = "("
-    for (i in input) {
-        val k = if (i < 0) i + 256 else i
-        s += "${k}, "
-    }
-    s += ")"
-    return s
-}
-
 const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
 data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
@@ -137,53 +127,53 @@ class Bip32Ed25519(private var seed: ByteArray) {
             val messageString = String(message)
             return prefixes.any { messageString.startsWith(it) }
         }
-    }
 
-    /**
-     * Reference of BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace
-     *
-     * @see section V. BIP32-Ed25519: Specification;
-     *
-     * A) Root keys
-     *
-     * @param seed
-     * - 256 bite seed generated from BIP39 Mnemonic
-     * @returns
-     * - Extended root key (kL, kR, c) where kL is the left 32 bytes of the root key, kR is the
-     * right 32 bytes of the root key, and c is the chain code. Total 96 bytes
-     */
-    fun fromSeed(seed: ByteArray): ByteArray {
-        // k = H512(seed)
-        var k = MessageDigest.getInstance("SHA-512").digest(seed)
-        var kL = k.sliceArray(0 until 32)
-        var kR = k.sliceArray(32 until 64)
+        /**
+         * Reference of BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace
+         *
+         * @see section V. BIP32-Ed25519: Specification;
+         *
+         * A) Root keys
+         *
+         * @param seed
+         * - 256 bite seed generated from BIP39 Mnemonic
+         * @returns
+         * - Extended root key (kL, kR, c) where kL is the left 32 bytes of the root key, kR is the
+         * right 32 bytes of the root key, and c is the chain code. Total 96 bytes
+         */
+        fun fromSeed(seed: ByteArray): ByteArray {
+            // k = H512(seed)
+            var k = MessageDigest.getInstance("SHA-512").digest(seed)
+            var kL = k.sliceArray(0 until 32)
+            var kR = k.sliceArray(32 until 64)
 
-        // While the third highest bit of the last byte of kL is not zero
-        while (kL[31].toInt() and 0b00100000 != 0) {
-            val hmac = Mac.getInstance("HmacSHA512")
-            hmac.init(SecretKeySpec(kL, "HmacSHA512"))
-            k = hmac.doFinal(kR)
-            kL = k.sliceArray(0 until 32)
-            kR = k.sliceArray(32 until 64)
+            // While the third highest bit of the last byte of kL is not zero
+            while (kL[31].toInt() and 0b00100000 != 0) {
+                val hmac = Mac.getInstance("HmacSHA512")
+                hmac.init(SecretKeySpec(kL, "HmacSHA512"))
+                k = hmac.doFinal(kR)
+                kL = k.sliceArray(0 until 32)
+                kR = k.sliceArray(32 until 64)
+            }
+
+            // clamp
+            // Set the bits in kL as follows:
+            // little Endianess
+            kL[0] =
+                    (kL[0].toInt() and 0b11111000)
+                            .toByte() // the lowest 3 bits of the first byte of kL are cleared
+            kL[31] =
+                    (kL[31].toInt() and 0b01111111)
+                            .toByte() // the highest bit of the last byte is cleared
+            kL[31] =
+                    (kL[31].toInt() or 0b01000000)
+                            .toByte() // the second highest bit of the last byte is set
+
+            // chain root code
+            // SHA256(0x01||k)
+            val c = MessageDigest.getInstance("SHA-256").digest(byteArrayOf(0x01) + seed)
+            return kL + kR + c
         }
-
-        // clamp
-        // Set the bits in kL as follows:
-        // little Endianess
-        kL[0] =
-                (kL[0].toInt() and 0b11111000)
-                        .toByte() // the lowest 3 bits of the first byte of kL are cleared
-        kL[31] =
-                (kL[31].toInt() and 0b01111111)
-                        .toByte() // the highest bit of the last byte is cleared
-        kL[31] =
-                (kL[31].toInt() or 0b01000000)
-                        .toByte() // the second highest bit of the last byte is set
-
-        // chain root code
-        // SHA256(0x01||k)
-        val c = MessageDigest.getInstance("SHA-256").digest(byteArrayOf(0x01) + seed)
-        return kL + kR + c
     }
 
     /**
