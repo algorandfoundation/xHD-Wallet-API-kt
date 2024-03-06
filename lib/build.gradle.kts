@@ -25,8 +25,9 @@ dependencies {
     // Bip39 implementation
     implementation("cash.z.ecc.android:kotlin-bip39:1.0.7") 
 
-    // Data validation
+    // For data validation
     implementation("net.pwall.json:json-kotlin-schema:0.46")
+    implementation("com.algorand:algosdk:2.4.0")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

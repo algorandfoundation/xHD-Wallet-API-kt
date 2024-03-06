@@ -19,6 +19,15 @@ package bip32ed25519
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
+import com.algorand.algosdk.crypto.Address
+import com.algorand.algosdk.kmd.client.KmdClient
+import com.algorand.algosdk.kmd.client.api.KmdApi
+import com.algorand.algosdk.kmd.client.model.*
+import com.algorand.algosdk.transaction.SignedTransaction
+import com.algorand.algosdk.transaction.Transaction
+import com.algorand.algosdk.util.Encoder
+import com.algorand.algosdk.v2.client.common.AlgodClient
+import com.algorand.algosdk.v2.client.common.IndexerClient
 import com.goterl.lazysodium.utils.Key
 import java.util.Base64
 import kotlin.collections.component1
@@ -927,6 +936,200 @@ class Bip32Ed25519Test {
                         assert(message.contentEquals(plaintext)) {
                                 "message and decrypted plaintext are not equal"
                         }
+                }
+        }
+
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        internal class AlgoSDKTests {
+
+                private lateinit var alice: Bip32Ed25519
+
+                @BeforeAll
+                fun setup() {
+                        val aliceSeed =
+                                        MnemonicCode(
+                                                                        "exact remain north lesson program series excess lava material second riot error boss planet brick rotate scrap army riot banner adult fashion casino bamboo".toCharArray()
+                                                        )
+                                                        .toSeed()
+
+                        alice = Bip32Ed25519(aliceSeed)
+                }
+
+                @Test
+                fun verifySignAlgorandTx() {
+                        // Based off of README instructions:
+                        // https://github.com/algorand/java-algorand-sdk/tree/develop
+
+                        // Obviously requires a valid Algorand node running on localhost, e.g. using
+                        // algokit
+
+                        val token =
+                                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                        val algod = AlgodClient("http://localhost", 4001, token)
+                        val indexer = IndexerClient("http://localhost", 8980)
+
+                        // Initialize KMD v1 client
+                        val kmdClient = KmdClient()
+                        kmdClient.setBasePath("http://localhost:4002")
+                        kmdClient.setApiKey(token)
+                        val kmd = KmdApi(kmdClient)
+
+                        // Get accounts from sandbox.
+                        // Get the wallet handle
+                        var walletHandle = ""
+                        for (w in kmd.listWallets().wallets) {
+                                if (w.name == "unencrypted-default-wallet") {
+                                        val tokenreq = InitWalletHandleTokenRequest()
+                                        tokenreq.walletId = w.id
+                                        tokenreq.walletPassword = ""
+                                        walletHandle =
+                                                        kmd.initWalletHandleToken(tokenreq)
+                                                                        .walletHandleToken
+                                }
+                        }
+
+                        // Get accounts from wallet
+                        val accounts = mutableListOf<Address>()
+                        val keysRequest = ListKeysRequest()
+                        keysRequest.walletHandleToken = walletHandle
+                        for (addr in kmd.listKeysInWallet(keysRequest).addresses) {
+                                accounts.add(Address(addr))
+                        }
+
+                        val alicePK = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+                        val aliceAddress = Address(alicePK)
+                        val algo = 1 * 1000000
+
+                        // Create a payment transaction
+                        val tx =
+                                        Transaction.PaymentTransactionBuilder()
+                                                        .lookupParams(
+                                                                        algod
+                                                        ) // lookup fee, firstValid, lastValid
+                                                        .sender(accounts.get(0))
+                                                        .receiver(aliceAddress)
+                                                        .amount(10 * algo)
+                                                        .noteUTF8("test transaction!")
+                                                        .build()
+
+                        // Sign with KMD
+                        val txReq = SignTransactionRequest()
+                        txReq.transaction = Encoder.encodeToMsgPack(tx)
+                        txReq.walletHandleToken = walletHandle
+                        txReq.walletPassword = ""
+                        val stx1Bytes = kmd.signTransaction(txReq).signedTransaction
+                        val stx1 =
+                                        Encoder.decodeFromMsgPack(
+                                                        stx1Bytes,
+                                                        SignedTransaction::class.java
+                                        )
+                        assert(stx1Bytes.contentEquals(Encoder.encodeToMsgPack(stx1))) {
+                                "stx1aBytes information lost in MsgPack encoding/decoding"
+                        }
+
+                        // Send transaction funding Alice
+                        val post1 = algod.RawTransaction().rawtxn(stx1Bytes).execute()
+                        if (!post1.isSuccessful) {
+                                throw RuntimeException("Failed to post transaction")
+                        }
+
+                        // Wait for confirmation
+                        var done = false
+                        while (!done) {
+                                val txInfo1 =
+                                                algod.PendingTransactionInformation(
+                                                                                post1.body()?.txId
+                                                                )
+                                                                .execute()
+                                if (!txInfo1.isSuccessful) {
+                                        throw RuntimeException("Failed to check on tx progress")
+                                }
+                                if (txInfo1.body()?.confirmedRound != null) {
+                                        done = true
+                                }
+                        }
+
+                        // Wait for indexer to index the round.
+                        Thread.sleep(5000)
+
+                        // Query indexer for the transaction
+                        val transactions1 =
+                                        indexer.searchForTransactions()
+                                                        .txid(post1.body()?.txId)
+                                                        .execute()
+
+                        if (!transactions1.isSuccessful) {
+                                throw RuntimeException("Failed to lookup transaction")
+                        }
+
+                        // Check Alice's account
+                        val aliceAlgoAddressInfo = indexer.lookupAccountByID(aliceAddress).execute()
+
+                        if (!aliceAlgoAddressInfo.isSuccessful) {
+                                throw RuntimeException("Failed to lookup Alice's account")
+                        }
+
+                        // Let's have Alice send a tx!
+                        val tx2 =
+                                        Transaction.PaymentTransactionBuilder()
+                                                        .lookupParams(
+                                                                        algod
+                                                        ) // lookup fee, firstValid, lastValid
+                                                        .sender(aliceAddress)
+                                                        .receiver(accounts.get(0))
+                                                        .amount(algo)
+                                                        .noteUTF8("test transaction!")
+                                                        .build()
+
+                        // Sign with Alice's key
+                        val stx2 = alice.signAlgoTransaction(KeyContext.Address, 0u, 0u, 0u, tx2)
+                        val stx2Bytes = Encoder.encodeToMsgPack(stx2)
+
+                        // Send transaction funding Alice
+                        val post2 = algod.RawTransaction().rawtxn(stx2Bytes).execute()
+
+                        if (!post2.isSuccessful) {
+                                throw RuntimeException("Failed to post transaction")
+                        }
+
+                        // Wait for confirmation
+                        var done2 = false
+                        while (!done2) {
+                                val txInfo2 =
+                                                algod.PendingTransactionInformation(
+                                                                                post2.body()?.txId
+                                                                )
+                                                                .execute()
+                                if (!txInfo2.isSuccessful) {
+                                        throw RuntimeException("Failed to check on tx progress")
+                                }
+                                if (txInfo2.body()?.confirmedRound != null) {
+                                        done2 = true
+                                }
+                        }
+
+                        // Wait for indexer to index the round.
+                        Thread.sleep(5000)
+
+                        // Query indexer for the transaction
+                        val transactions2 =
+                                        indexer.searchForTransactions()
+                                                        .txid(post2.body()?.txId)
+                                                        .execute()
+
+                        if (!transactions2.isSuccessful) {
+                                throw RuntimeException("Failed to lookup transaction")
+                        }
+
+                        // Check Alice's account
+                        val aliceAlgoAddressInfo2 =
+                                        indexer.lookupAccountByID(aliceAddress).execute()
+
+                        if (!aliceAlgoAddressInfo2.isSuccessful) {
+                                throw RuntimeException("Failed to lookup Alice's account")
+                        }
+
+                        println("body: ${aliceAlgoAddressInfo2.body()}")
                 }
         }
 }
