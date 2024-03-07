@@ -17,6 +17,11 @@
 
 package bip32ed25519
 
+import com.algorand.algosdk.crypto.Address
+import com.algorand.algosdk.crypto.Signature
+import com.algorand.algosdk.transaction.SignedTransaction
+import com.algorand.algosdk.transaction.Transaction
+import com.algorand.algosdk.util.*
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
@@ -41,8 +46,6 @@ enum class Encoding {
 }
 
 class DataValidationException(message: String) : Exception(message)
-
-const val ERROR_TAGS_FOUND = "Error: Algorand-specific tags found"
 
 data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
@@ -95,13 +98,15 @@ class Bip32Ed25519(private var seed: ByteArray) {
         fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
             // Check for Algorand tags
             if (hasAlgorandTags(message)) {
-                return false // Assuming ERROR_TAGS_FOUND maps to false
+                return false
             }
 
             val decoded: ByteArray =
                     when (metadata.encoding) {
                         Encoding.BASE64 -> Base64.getDecoder().decode(message)
-                        // Encoding.MSGPACK -> Cbor.decodeFromByteArray(message)
+                        // Encoding.CBOR ->
+                        Encoding.MSGPACK ->
+                                Encoder.decodeFromMsgPack(message, ByteArray::class.java)
                         Encoding.NONE -> message
                         else -> throw IllegalArgumentException("Invalid encoding")
                     }
@@ -120,7 +125,53 @@ class Bip32Ed25519(private var seed: ByteArray) {
         }
 
         fun hasAlgorandTags(message: ByteArray): Boolean {
-            val prefixes = listOf("TX", "MX", "progData", "Program")
+            // Prefixes taken from go-algorand node software code
+            // https://github.com/algorand/go-algorand/blob/master/protocol/hash.go
+            val prefixes =
+                    listOf(
+                            "appID",
+                            "arc",
+                            "aB",
+                            "aD",
+                            "aO",
+                            "aP",
+                            "aS",
+                            "AS",
+                            "B256",
+                            "BH",
+                            "BR",
+                            "CR",
+                            "GE",
+                            "KP",
+                            "MA",
+                            "MB",
+                            "MX",
+                            "NIC",
+                            "NIR",
+                            "NIV",
+                            "NPR",
+                            "OT1",
+                            "OT2",
+                            "PF",
+                            "PL",
+                            "Program",
+                            "ProgData",
+                            "PS",
+                            "PK",
+                            "SD",
+                            "SpecialAddr",
+                            "STIB",
+                            "spc",
+                            "spm",
+                            "spp",
+                            "sps",
+                            "spv",
+                            "TE",
+                            "TG",
+                            "TL",
+                            "TX",
+                            "VO"
+                    )
             val messageString = String(message)
             return prefixes.any { messageString.startsWith(it) }
         }
@@ -369,10 +420,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
     }
 
     /**
-     * Ref: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.6
-     *
-     * Edwards-Curve Digital Signature Algorithm (EdDSA)
-     *
+     * Sign arbitrary but non-Algorand related data
      * @param context
      * - context of the key (i.e Address, Identity)
      * @param account
@@ -399,16 +447,73 @@ class Bip32Ed25519(private var seed: ByteArray) {
 
         val valid = validateData(data, metadata)
 
-        // if (valid is Error) { // decoding errors
-        //     throw result
-        // }
-
         if (!valid) { // failed schema validation
             throw DataValidationException("Data validation failed")
         }
 
+        return rawSign(getBIP44PathFromContext(context, account, change, keyIndex), data)
+    }
+
+    /**
+     * Sign Algorand transaction
+     * @param context
+     * - context of the key (i.e Address, Identity)
+     * @param account
+     * - account number. This value will be hardened as part of BIP44
+     * @param keyIndex
+     * - key index. This value will be a SOFT derivation as part of BIP44.
+     * @param tx
+     * - Transaction object containing parameters to be signed, e.g. sender, receiver, amount, fee,
+     *
+     * @returns stx
+     * - SignedTransaction object
+     */
+    fun signAlgoTransaction(
+            context: KeyContext,
+            account: UInt,
+            change: UInt,
+            keyIndex: UInt,
+            tx: Transaction,
+    ): SignedTransaction {
+
+        val prefixEncodedTx = tx.bytesToSign()
+        val pk = this.keyGen(context, account, change, keyIndex)
+        val pkAddress = Address(pk)
+
+        val txSig =
+                Signature(
+                        rawSign(
+                                getBIP44PathFromContext(context, account, change, keyIndex),
+                                prefixEncodedTx.copyOf()
+                        )
+                )
+
+        val stx = SignedTransaction(tx, txSig, tx.txID())
+
+        if (tx.sender != pkAddress) {
+            stx.authAddr(pkAddress)
+        }
+        return stx
+    }
+
+    /**
+     * Raw Signing function called by signData and signTransaction
+     *
+     * Ref: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.6
+     *
+     * Edwards-Curve Digital Signature Algorithm (EdDSA)
+     *
+     * @param bip44Path
+     * - BIP44 path (m / purpose' / coin_type' / account' / change / address_index)
+     * @param data
+     * - data to be signed in raw bytes
+     *
+     * @returns
+     * - signature holding R and S, totally 64 bytes
+     */
+    fun rawSign(bip44Path: List<UInt>, data: ByteArray): ByteArray {
+
         val rootKey: ByteArray = fromSeed(this.seed)
-        val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
         val raw: ByteArray = deriveKey(rootKey, bip44Path, true)
 
         val scalar = raw.sliceArray(0 until 32)

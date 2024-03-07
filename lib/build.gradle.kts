@@ -25,8 +25,9 @@ dependencies {
     // Bip39 implementation
     implementation("cash.z.ecc.android:kotlin-bip39:1.0.7") 
 
-    // Data validation
+    // For data validation
     implementation("net.pwall.json:json-kotlin-schema:0.46")
+    implementation("com.algorand:algosdk:2.4.0")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
@@ -57,8 +58,17 @@ dependencies {
 // Apply a specific Java toolchain to ease working on different environments.
 java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
+// Run ./gradlew test to execute tests not requiring an Algorand Sandbox network
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
+    useJUnitPlatform{
+        excludeTags("sandbox")
+    }
+    testLogging.showStandardStreams = true
+}
+
+// Run ./gradlew testWithAlgorandSandbox to run tests that interact with an Algorand Sandbox network (e.g. Algokit Localnet)
+tasks.register<Test>("testWithAlgorandSandbox") {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
 }
