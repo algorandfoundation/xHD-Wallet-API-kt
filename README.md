@@ -60,6 +60,8 @@ Regarding change: the original purpose was to set for "external" (= 0) and "inte
 
 In Algorand however, there is an opportunity to assign change values to specific apps that require generation of one-time keys. E.g., a private DAO voting tool using ring signatures will need to generate a new key pair and submit the PK for each vote. The DAO could choose to claim any random number between 0 - (2^32-1), so that the wallet will set that number for the change field. This would be helpful if a user loads the seed into a new wallet and wishes to interact with the same private DAO voting tool - for discovery and displaying of past voting, as well as to avoid accidentally generating and submitting the same keypair as previous.
 
+### Get publicKey
+
 Consider the derivation path `m'/44'/283'/0'/0/0`. This corresponds to:
 
 ```kotlin
@@ -67,6 +69,8 @@ Consider the derivation path `m'/44'/283'/0'/0/0`. This corresponds to:
 ```
 
 This returns the public key.
+
+### Sign arbitrary data
 
 The user might wish to sign a 32 byte nonce:
 
@@ -91,6 +95,8 @@ The user might wish to sign a 32 byte nonce:
     assert(alice.verifyWithPublicKey(signature, nonce, pk))
 ```
 
+### ECDH
+
 The user might also wish to generate a shared secret with someone else:
 
 Alice's PoV:
@@ -107,9 +113,82 @@ Bob's PoV:
     val sharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, false)
 ```
 
-Note that ECDH involves hashing a concatenation of a shared point with Alice's and Bob's respective public keys. They'll need to agree before-hand whose public key should go first in this concatenation.
+Underneath the hood the Ed25519 PKs are turned into Curve25519 format.
+
+Note that ECDH involves hashing a concatenation of a shared point with Alice's and Bob's respective public keys (converted to Curve25519). They'll need to agree before-hand whose public key should go first in this concatenation.
 
 They can then use this shared secret for encrypting data.
+
+### Signing An Algorand Transaction
+
+Alice can turn her public key into an Algorand address using the AlgoSDK for Java
+
+```kotlin
+val alicePK = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val aliceAddress = Address(alicePK)
+println("Alice's Algorand Address: ${aliceAddress.toString()}")
+```
+
+Assume that it gets funded by someone. Alice can then start signing her own transactions sending some algoAmount to some receiver:
+
+```kotlin
+// Let's have Alice send a tx!
+val tx =
+        Transaction.PaymentTransactionBuilder()
+                .lookupParams(algod) // lookup fee, firstValid, lastValid
+                .sender(aliceAddress)
+                .receiver(receiver)
+                .amount(algoAmount)
+                .noteUTF8("Keep the change!")
+                .build()
+
+val stx = alice.signAlgoTransaction(KeyContext.Address, 0u, 0u, 0u, tx) // An Algorand Signed Transaction object
+val stxBytes = Encoder.encodeToMsgPack(stx) // Encoded to bytes
+
+val post = algod.RawTransaction().rawtxn(stxBytes).execute() // Post the signed transaction to an AlgoD client.
+
+if (!post.isSuccessful) { // Check if there was an issue
+    throw RuntimeException("Failed to post transaction")
+}
+
+// We confirmed that Algod received the signed transaction. It has begun to propogate it to the network.
+// We wait for confirmation:
+
+var done = false
+while (!done) {
+    val txInfo = algod.PendingTransactionInformation(post.body()?.txId).execute()
+    if (!txInfo.isSuccessful) {
+        throw RuntimeException("Failed to check on tx progress")
+    }
+    if (txInfo.body()?.confirmedRound != null) {
+        done = true
+    }
+}
+
+println("Transaction ID: ${post.body()?.txId}")
+```
+
+## Running tests
+
+This Kotlin project uses Gradle.
+
+```bash
+./gradlew test
+```
+
+The command above will run tests expected to work without access to an Algorand Localnet/Sandbox running at localhost.
+
+The following command however will run additional tests (testing signAlgoTransaction()) that involve making actual on-chain transactions.
+
+```bash
+./gradlew testWithAlgorandSandbox
+```
+
+Using algokit, run the following each time to reset account balances:
+
+```bash
+algokit localnet reset && ./gradlew testWithAlgorandSandbox
+```
 
 ## License
 
@@ -126,3 +205,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+```
+
+```

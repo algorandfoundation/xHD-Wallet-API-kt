@@ -30,4 +30,4 @@ jobs:
         run: chmod +x initialize.sh && ./initialize.sh
 
       - name: Run tests
-        run: ./gradlew testNoAlgoLocalnet --info
+        run: ./gradlew test --info
