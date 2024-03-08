@@ -35,8 +35,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.6.3")
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation("com.fasterxml.jackson.core:jackson-core:2.16.1")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+    implementation("org.msgpack:jackson-dataformat-msgpack:0.9.8")
 
 
     // Use the Kotlin JUnit 5 integration.

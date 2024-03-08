@@ -471,13 +471,15 @@ class Bip32Ed25519Test {
                         val metadata = SignMetadata(Encoding.NONE, authSchema)
 
                         val valid = Bip32Ed25519.validateData(challenge.toByteArray(), metadata)
-                        assert(!valid) { "validation failed, message not in line with schema" }
+                        assert(!valid) {
+                                "validation succeeded, despite message not in line with schema"
+                        }
                 }
                 @Test
                 fun validateMsgBase64WrongEncodingFailedTest() {
                         // Message is encoded as Base64, but Encoding is set to NONE
 
-                        val message = """{"text":"Hello World"}"""
+                        val message = """{"text":"Hello, World!"}"""
                         val jsonSchema =
                                         """
                         {
@@ -503,14 +505,16 @@ class Bip32Ed25519Test {
                                                                         ),
                                                         metadata
                                         )
-                        assert(!valid) { "validation failed, message not in line with schema" }
+                        assert(!valid) {
+                                "validation succeeded, despite message not in line with schema"
+                        }
                 }
 
                 @Test
                 fun validateMsgWrongMessageFailedTest() {
                         // Schema expects "text" but message has "sentence" field name
 
-                        val message = """{"sentence":"Hello World"}"""
+                        val message = """{"sentence":"Hello, World!"}"""
                         val jsonSchema =
                                         """
                         {
@@ -529,14 +533,16 @@ class Bip32Ed25519Test {
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
                         val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
-                        assert(!valid) { "validation failed, message not in line with schema" }
+                        assert(!valid) {
+                                "validation succeeded, despite message not in line with schema"
+                        }
                 }
 
                 @Test
                 fun validateMsgMissingFieldFailedTest() {
                         // Schema requires
 
-                        val message = """{"text":"Hello World"}"""
+                        val message = """{"text":"Hello, World!"}"""
                         val jsonSchema =
                                         """
                         {
@@ -558,7 +564,9 @@ class Bip32Ed25519Test {
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
                         val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
-                        assert(!valid) { "validation failed, message not in line with schema" }
+                        assert(!valid) {
+                                "validation succeeded, despite message not in line with schema"
+                        }
                 }
 
                 @Test
@@ -579,7 +587,8 @@ class Bip32Ed25519Test {
                                                 "type": "integer"
                                         }
                                 },
-                                "required": ["text", "i"]
+                                "required": ["text", "i"],
+                                "additionalProperties": false
                         }
                         """.trimIndent()
 
@@ -588,7 +597,81 @@ class Bip32Ed25519Test {
                         val metadata = SignMetadata(Encoding.NONE, msgSchema)
 
                         val valid = Bip32Ed25519.validateData(message.toByteArray(), metadata)
+                        assert(!valid) {
+                                "validation succeeded, despite message not in line with schema"
+                        }
+                }
+
+                @Test
+                fun validateMsgPackTest() {
+                        // {"text":"Hello, World!"} --> 81a474657874ad48656c6c6f2c20576f726c6421
+                        val msgPackData = "81a474657874ad48656c6c6f2c20576f726c6421"
+                        val message = helperHexStringToByteArray(msgPackData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "string"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.MSGPACK, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
                         assert(valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateMsg2PackTest() {
+                        // {"num": 1} --> 81a36e756d01
+                        val msgPackData = "81a36e756d01"
+                        val message = helperHexStringToByteArray(msgPackData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "num": {
+                                                                "type": "integer"
+                                                        }
+                                                },
+                                                "required": ["num"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.MSGPACK, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateMsgPackFailedTest() {
+                        // Incompatible JSON Schema
+                        // {"text":"Hello, World!"} --> 81a474657874ad48656c6c6f2c20576f726c6421
+                        val msgPackData = "81a474657874ad48656c6c6f2c20576f726c6421"
+                        val message = helperHexStringToByteArray(msgPackData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "integer"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.MSGPACK, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(!valid) {
+                                "validation succeeded, despite message not in line with schema"
+                        }
                 }
         }
 
@@ -732,6 +815,56 @@ class Bip32Ed25519Test {
                                 // If we get past this line, the test failed
                                 throw (IllegalArgumentException(
                                                 "signData func did not throw DataValidationExcept despite wrong encoding"
+                                ))
+                        } catch (e: Exception) {
+                                assert(e is DataValidationException) {
+                                        "signData did not throw an DataValidationException"
+                                }
+                        }
+                }
+
+                @Test
+                fun signAuthChallengeMsgPackTest() {
+                        // Corresponds to {"0": 255, "1": 1032, ..., "31": 27}
+                        val msgPackData =
+                                        "de0020a130ccffa13167a1321aa133ccdea13407a13556a13637a1375fa138ccc5a139ccb3a23130ccf9a23131ccfca23132cce8a23133ccfca23134ccb0a2313527a2313670a23137cc83a2313834a231393fa23230ccd4a232313aa23232cce2a2323359a2323440a232355ea2323617a232375ba23238cc80a23239cc8fa233307ba233311b"
+
+                        val data = helperHexStringToByteArray(msgPackData)
+                        val pk = c.keyGen(KeyContext.Address, 0u, 0u, 0u)
+
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.MSGPACK, authSchema)
+
+                        val signature = c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
+
+                        val isValid = c.verifyWithPublicKey(signature, data, pk)
+                        assert(isValid) { "signature is not valid" }
+
+                        val pk2 = c.keyGen(KeyContext.Address, 0u, 0u, 1u)
+                        assert(!c.verifyWithPublicKey(signature, data, pk2)) {
+                                "signature is unexpectedly valid"
+                        }
+                }
+
+                @Test
+                fun signAuthChallengeMsgPackFailedTest() {
+                        // Corresponds to {"0": 256, "1": 1032, ..., "31": 27} - 256 is too large
+
+                        val msgPackData =
+                                        "de0020a130cd0100a13167a1321aa133ccdea13407a13556a13637a1375fa138ccc5a139ccb3a23130ccf9a23131ccfca23132cce8a23133ccfca23134ccb0a2313527a2313670a23137cc83a2313834a231393fa23230ccd4a232313aa23232cce2a2323359a2323440a232355ea2323617a232375ba23238cc80a23239cc8fa233307ba233311b"
+
+                        val data = helperHexStringToByteArray(msgPackData)
+
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.MSGPACK, authSchema)
+
+                        try {
+                                c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
+                                // If we get past this line, the test failed
+                                throw (IllegalArgumentException(
+                                                "signData func did not throw DataValidationExcept despite bad message"
                                 ))
                         } catch (e: Exception) {
                                 assert(e is DataValidationException) {
