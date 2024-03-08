@@ -23,6 +23,7 @@ import com.algorand.algosdk.transaction.SignedTransaction
 import com.algorand.algosdk.transaction.Transaction
 import com.algorand.algosdk.util.*
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
@@ -53,6 +54,51 @@ data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
 class Bip32Ed25519(private var seed: ByteArray) {
     companion object {
+        val prefixes =
+                listOf(
+                        "appID",
+                        "arc",
+                        "aB",
+                        "aD",
+                        "aO",
+                        "aP",
+                        "aS",
+                        "AS",
+                        "B256",
+                        "BH",
+                        "BR",
+                        "CR",
+                        "GE",
+                        "KP",
+                        "MA",
+                        "MB",
+                        "MX",
+                        "NIC",
+                        "NIR",
+                        "NIV",
+                        "NPR",
+                        "OT1",
+                        "OT2",
+                        "PF",
+                        "PL",
+                        "Program",
+                        "ProgData",
+                        "PS",
+                        "PK",
+                        "SD",
+                        "SpecialAddr",
+                        "STIB",
+                        "spc",
+                        "spm",
+                        "spp",
+                        "sps",
+                        "spv",
+                        "TE",
+                        "TG",
+                        "TL",
+                        "TX",
+                        "VO"
+                )
 
         // Load it once statically and use it for the lifetime of the application
         val lazySodium: LazySodiumJava =
@@ -100,13 +146,18 @@ class Bip32Ed25519(private var seed: ByteArray) {
         fun validateData(message: ByteArray, metadata: SignMetadata): Boolean {
             // Check for Algorand tags
             if (hasAlgorandTags(message)) {
-                return false
+                throw DataValidationException("Data contains Algorand tags")
             }
 
             val decoded: ByteArray =
                     when (metadata.encoding) {
                         Encoding.BASE64 -> Base64.getDecoder().decode(message)
-                        // Encoding.CBOR ->
+                        Encoding.CBOR ->
+                                ObjectMapper()
+                                        .writeValueAsString(
+                                                CBORMapper().readValue(message, Map::class.java)
+                                        )
+                                        .toByteArray()
                         Encoding.MSGPACK ->
                                 ObjectMapper()
                                         .writeValueAsString(
@@ -120,7 +171,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
 
             // Check after decoding too
             if (hasAlgorandTags(decoded)) {
-                return false
+                throw DataValidationException("Data contains Algorand tags")
             }
 
             // Validate with schema
@@ -134,51 +185,7 @@ class Bip32Ed25519(private var seed: ByteArray) {
         fun hasAlgorandTags(message: ByteArray): Boolean {
             // Prefixes taken from go-algorand node software code
             // https://github.com/algorand/go-algorand/blob/master/protocol/hash.go
-            val prefixes =
-                    listOf(
-                            "appID",
-                            "arc",
-                            "aB",
-                            "aD",
-                            "aO",
-                            "aP",
-                            "aS",
-                            "AS",
-                            "B256",
-                            "BH",
-                            "BR",
-                            "CR",
-                            "GE",
-                            "KP",
-                            "MA",
-                            "MB",
-                            "MX",
-                            "NIC",
-                            "NIR",
-                            "NIV",
-                            "NPR",
-                            "OT1",
-                            "OT2",
-                            "PF",
-                            "PL",
-                            "Program",
-                            "ProgData",
-                            "PS",
-                            "PK",
-                            "SD",
-                            "SpecialAddr",
-                            "STIB",
-                            "spc",
-                            "spm",
-                            "spp",
-                            "sps",
-                            "spv",
-                            "TE",
-                            "TG",
-                            "TL",
-                            "TX",
-                            "VO"
-                    )
+
             val messageString = String(message)
             return prefixes.any { messageString.startsWith(it) }
         }

@@ -673,6 +673,86 @@ class Bip32Ed25519Test {
                                 "validation succeeded, despite message not in line with schema"
                         }
                 }
+
+                @Test
+                fun validateCBORTest() {
+                        // {"text":"Hello, World!"} --> A164746578746D48656C6C6F2C20576F726C6421
+                        val cborData = "A164746578746D48656C6C6F2C20576F726C6421"
+                        val message = helperHexStringToByteArray(cborData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "string"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.CBOR, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateCBORFailedTest() {
+                        // {"text":"Hello, World!"} --> A164746578746D48656C6C6F2C20576F726C6421
+                        val cborData = "A164746578746D48656C6C6F2C20576F726C6421"
+                        val message = helperHexStringToByteArray(cborData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "integer"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.CBOR, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(!valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun passThroughIllegalPrependFailedTest() {
+                        val message = """{"text":"Hello, World!"}""".toByteArray()
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "string"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val metadata = SignMetadata(Encoding.NONE, JSONSchema.parse(jsonSchema))
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(valid) { "validation failed, message not in line with schema" }
+
+                        try {
+                                for (prefix in Bip32Ed25519.prefixes) {
+                                        Bip32Ed25519.validateData(
+                                                        prefix.toByteArray() + message,
+                                                        metadata
+                                        )
+                                        assert(false) {
+                                                "Illegal prepend unexpectedly did not throw error!"
+                                        }
+                                }
+                        } catch (e: DataValidationException) {
+                                assert(true) { "Wrong exception was thrown" }
+                        }
+                }
         }
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
