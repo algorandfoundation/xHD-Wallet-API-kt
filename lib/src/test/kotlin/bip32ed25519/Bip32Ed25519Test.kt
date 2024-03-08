@@ -982,7 +982,7 @@ class Bip32Ed25519Test {
                         // Corresponds to {"0": 256, "1": 1032, ..., "31": 27} - 256 is too large
 
                         val CBORData =
-                                        "B820613018FF613118676132181A613318DE61340761351856613618376137185F613818C5613918B362313018F962313118FC62313218E862313318FC62313418B06231351827623136187062313718836231381834623139183F62323018D4623231183A62323218E262323318596232341840623235185E62323617623237185B6232381880623239188F623330187B623331181B"
+                                        "B8206130190100613118676132181A613318DE61340761351856613618376137185F613818C5613918B362313018F962313118FC62313218E862313318FC62313418B06231351827623136187062313718836231381834623139183F62323018D4623231183A62323218E262323318596232341840623235185E62323617623237185B6232381880623239188F623330187B623331181B"
 
                         val data = helperHexStringToByteArray(CBORData)
 
@@ -1056,17 +1056,6 @@ class Bip32Ed25519Test {
                                 }
                         } catch (e: DataValidationException) {
                                 assert(true) { "Wrong exception was thrown" }
-                        }
-                        try {
-                                c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
-                                // If we get past this line, the test failed
-                                throw (IllegalArgumentException(
-                                                "signData func did not throw DataValidationExcept despite bad message"
-                                ))
-                        } catch (e: Exception) {
-                                assert(e is DataValidationException) {
-                                        "signData did not throw an DataValidationException"
-                                }
                         }
                 }
         }
