@@ -673,6 +673,86 @@ class Bip32Ed25519Test {
                                 "validation succeeded, despite message not in line with schema"
                         }
                 }
+
+                @Test
+                fun validateCBORTest() {
+                        // {"text":"Hello, World!"} --> A164746578746D48656C6C6F2C20576F726C6421
+                        val cborData = "A164746578746D48656C6C6F2C20576F726C6421"
+                        val message = helperHexStringToByteArray(cborData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "string"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.CBOR, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun validateCBORFailedTest() {
+                        // {"text":"Hello, World!"} --> A164746578746D48656C6C6F2C20576F726C6421
+                        val cborData = "A164746578746D48656C6C6F2C20576F726C6421"
+                        val message = helperHexStringToByteArray(cborData)
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "integer"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val msgSchema = JSONSchema.parse(jsonSchema)
+                        val metadata = SignMetadata(Encoding.CBOR, msgSchema)
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(!valid) { "validation failed, message not in line with schema" }
+                }
+
+                @Test
+                fun passThroughIllegalPrependFailedTest() {
+                        val message = """{"text":"Hello, World!"}""".toByteArray()
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "string"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val metadata = SignMetadata(Encoding.NONE, JSONSchema.parse(jsonSchema))
+                        val valid = Bip32Ed25519.validateData(message, metadata)
+                        assert(valid) { "validation failed, message not in line with schema" }
+
+                        try {
+                                for (prefix in Bip32Ed25519.prefixes) {
+                                        Bip32Ed25519.validateData(
+                                                        prefix.toByteArray() + message,
+                                                        metadata
+                                        )
+                                        assert(false) {
+                                                "Illegal prepend unexpectedly did not throw error!"
+                                        }
+                                }
+                        } catch (e: DataValidationException) {
+                                assert(true) { "Wrong exception was thrown" }
+                        }
+                }
         }
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -860,6 +940,123 @@ class Bip32Ed25519Test {
                                         JSONSchema.parseFile("src/test/resources/auth.request.json")
                         val metadata = SignMetadata(Encoding.MSGPACK, authSchema)
 
+                        try {
+                                c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
+                                // If we get past this line, the test failed
+                                throw (IllegalArgumentException(
+                                                "signData func did not throw DataValidationExcept despite bad message"
+                                ))
+                        } catch (e: Exception) {
+                                assert(e is DataValidationException) {
+                                        "signData did not throw an DataValidationException"
+                                }
+                        }
+                }
+
+                @Test
+                fun signAuthChallengeCBORTest() {
+                        // Corresponds to {"0": 255, "1": 1032, ..., "31": 27}
+                        val CBORData =
+                                        "B820613018FF613118676132181A613318DE61340761351856613618376137185F613818C5613918B362313018F962313118FC62313218E862313318FC62313418B06231351827623136187062313718836231381834623139183F62323018D4623231183A62323218E262323318596232341840623235185E62323617623237185B6232381880623239188F623330187B623331181B"
+
+                        val data = helperHexStringToByteArray(CBORData)
+                        val pk = c.keyGen(KeyContext.Address, 0u, 0u, 0u)
+
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.CBOR, authSchema)
+
+                        val signature = c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
+
+                        val isValid = c.verifyWithPublicKey(signature, data, pk)
+                        assert(isValid) { "signature is not valid" }
+
+                        val pk2 = c.keyGen(KeyContext.Address, 0u, 0u, 1u)
+                        assert(!c.verifyWithPublicKey(signature, data, pk2)) {
+                                "signature is unexpectedly valid"
+                        }
+                }
+
+                @Test
+                fun signAuthChallengeCBORFailedTest() {
+                        // Corresponds to {"0": 256, "1": 1032, ..., "31": 27} - 256 is too large
+
+                        val CBORData =
+                                        "B820613018FF613118676132181A613318DE61340761351856613618376137185F613818C5613918B362313018F962313118FC62313218E862313318FC62313418B06231351827623136187062313718836231381834623139183F62323018D4623231183A62323218E262323318596232341840623235185E62323617623237185B6232381880623239188F623330187B623331181B"
+
+                        val data = helperHexStringToByteArray(CBORData)
+
+                        val authSchema =
+                                        JSONSchema.parseFile("src/test/resources/auth.request.json")
+                        val metadata = SignMetadata(Encoding.CBOR, authSchema)
+
+                        try {
+                                c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
+                                // If we get past this line, the test failed
+                                throw (IllegalArgumentException(
+                                                "signData func did not throw DataValidationExcept despite bad message"
+                                ))
+                        } catch (e: Exception) {
+                                assert(e is DataValidationException) {
+                                        "signData did not throw an DataValidationException"
+                                }
+                        }
+                }
+
+                @Test
+                fun signIllegalPrependMsgFailedTest() {
+                        val message = """{"text":"Hello, World!"}""".toByteArray()
+                        val jsonSchema =
+                                        """
+                                        {
+                                                "type": "object",
+                                                "properties": {
+                                                        "text": {
+                                                                "type": "string"
+                                                        }
+                                                },
+                                                "required": ["text"]
+                                        }
+                                        """.trimIndent()
+                        val metadata = SignMetadata(Encoding.NONE, JSONSchema.parse(jsonSchema))
+
+                        val pk = c.keyGen(KeyContext.Address, 0u, 0u, 0u)
+
+                        val signature =
+                                        c.signData(
+                                                        KeyContext.Address,
+                                                        0u,
+                                                        0u,
+                                                        0u,
+                                                        message,
+                                                        metadata
+                                        )
+
+                        val isValid = c.verifyWithPublicKey(signature, message, pk)
+                        assert(isValid) { "signature is not valid" }
+
+                        val pk2 = c.keyGen(KeyContext.Address, 0u, 0u, 1u)
+                        assert(!c.verifyWithPublicKey(signature, message, pk2)) {
+                                "signature is unexpectedly valid"
+                        }
+
+                        try {
+                                for (prefix in Bip32Ed25519.prefixes) {
+                                        c.signData(
+                                                        KeyContext.Address,
+                                                        0u,
+                                                        0u,
+                                                        0u,
+                                                        prefix.toByteArray() + message,
+                                                        metadata
+                                        )
+                                        assert(false) {
+                                                "Illegal prepend unexpectedly did not throw error!"
+                                        }
+                                }
+                        } catch (e: DataValidationException) {
+                                assert(true) { "Wrong exception was thrown" }
+                        }
                         try {
                                 c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata)
                                 // If we get past this line, the test failed
