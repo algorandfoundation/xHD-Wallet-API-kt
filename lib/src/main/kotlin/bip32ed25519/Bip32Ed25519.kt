@@ -22,6 +22,7 @@ import com.algorand.algosdk.crypto.Signature
 import com.algorand.algosdk.transaction.SignedTransaction
 import com.algorand.algosdk.transaction.Transaction
 import com.algorand.algosdk.util.*
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
@@ -32,6 +33,7 @@ import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import net.pwall.json.schema.JSONSchema
+import org.msgpack.jackson.dataformat.MessagePackFactory
 
 enum class KeyContext(val value: Int) {
     Address(0),
@@ -106,7 +108,12 @@ class Bip32Ed25519(private var seed: ByteArray) {
                         Encoding.BASE64 -> Base64.getDecoder().decode(message)
                         // Encoding.CBOR ->
                         Encoding.MSGPACK ->
-                                Encoder.decodeFromMsgPack(message, ByteArray::class.java)
+                                ObjectMapper()
+                                        .writeValueAsString(
+                                                ObjectMapper(MessagePackFactory())
+                                                        .readValue(message, Map::class.java)
+                                        )
+                                        .toByteArray()
                         Encoding.NONE -> message
                         else -> throw IllegalArgumentException("Invalid encoding")
                     }
