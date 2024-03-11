@@ -5,9 +5,19 @@
  * For more details on building Java & JVM projects, please refer to https://docs.gradle.org/8.5/userguide/building_java_projects.html in the Gradle documentation.
  */
 
+version = "0.1.0"
+group = "com.algorandfoundation.bip32ed25519"
+
 plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
+    java
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
 }
 
 repositories {
@@ -58,7 +68,7 @@ dependencies {
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
-java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
+java { toolchain { languageVersion.set(JavaLanguageVersion.of(17)) } }
 
 // Run ./gradlew test to execute tests not requiring an Algorand Sandbox network
 tasks.named<Test>("test") {

@@ -6,10 +6,10 @@ echo "Building lazysodium-java..."
 cd lazysodium-java
 ./gradlew build
 
-echo "Copying lazysodium-java to lib/libs..."
+echo "Copying lazysodium-java to bip32ed25519kotlin/libs..."
 cd ..
-mkdir -p lib/libs
-mv lazysodium-java/build/libs/* lib/libs/
+mkdir -p bip32ed25519/libs/
+mv lazysodium-java/build/libs/* bip32ed25519/libs/
 
 echo "Running tests..."
 gradle wrapper
