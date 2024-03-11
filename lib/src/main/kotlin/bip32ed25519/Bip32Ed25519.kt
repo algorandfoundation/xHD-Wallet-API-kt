@@ -24,9 +24,7 @@ import com.algorand.algosdk.transaction.Transaction
 import com.algorand.algosdk.util.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper
-import com.goterl.lazysodium.LazySodiumJava
-import com.goterl.lazysodium.SodiumJava
-import com.goterl.lazysodium.utils.LibraryLoader
+import com.goterl.lazysodium.LazySodium
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -52,7 +50,7 @@ class DataValidationException(message: String) : Exception(message)
 
 data class SignMetadata(val encoding: Encoding, val schema: JSONSchema)
 
-class Bip32Ed25519(private var seed: ByteArray) {
+class Bip32Ed25519<T : LazySodium>(val lazySodium: T, private var seed: ByteArray) {
     companion object {
         val prefixes =
                 listOf(
@@ -99,10 +97,6 @@ class Bip32Ed25519(private var seed: ByteArray) {
                         "TX",
                         "VO"
                 )
-
-        // Load it once statically and use it for the lifetime of the application
-        val lazySodium: LazySodiumJava =
-                LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
 
         /**
          * Harden a number (set the highest bit to 1) Note that the input is UInt and the output is

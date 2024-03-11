@@ -28,18 +28,22 @@ You might be required to install using `sudo` privileges.
 
 ## How to Use
 
-Initialize an instance of Bip32Ed25519 with a seed:
+Initialize an instance of Bip32Ed25519 with an instantiation of LazySodium and the seed:
 
 ```kotlin
-    val alice = Bip32Ed25519(seedBytes)
+    val ls: LazySodiumJava = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
+    val alice = Bip32Ed25519<LazySodiumJava>(ls, seedBytes)
 ```
+
+LazySodiumJava is the desktop version. For mobile you can use LazySodiumAndroid which Bip32Ed25519 also takes.
 
 Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39` to use a seed phrase instead:
 
 ```kotlin
     val seed = MnemonicCode(
                 "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
-    alice = Bip32Ed25519(seed.toSeed())
+    val ls: LazySodiumJava = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
+    val alice = Bip32Ed25519<LazySodiumJava>(ls, seed.toSeed())
 ```
 
 Obviously do NOT make use of that seed phrase!
