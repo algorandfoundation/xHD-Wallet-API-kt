@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "Bip32Ed25519"
-include("lib")
+include("bip32ed25519")

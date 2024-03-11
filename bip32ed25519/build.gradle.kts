@@ -8,6 +8,13 @@
 plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
+    java
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
 }
 
 repositories {
@@ -74,3 +81,7 @@ tasks.register<Test>("testWithAlgorandSandbox") {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
 }
+
+
+version = "0.1.0"
+group = "com.algorandfoundation.bip32ed25519"
