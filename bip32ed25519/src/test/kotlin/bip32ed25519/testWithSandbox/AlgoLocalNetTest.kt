@@ -28,7 +28,6 @@ import com.algorand.algosdk.transaction.Transaction
 import com.algorand.algosdk.util.Encoder
 import com.algorand.algosdk.v2.client.common.AlgodClient
 import com.algorand.algosdk.v2.client.common.IndexerClient
-import com.goterl.lazysodium.LazySodiumJava
 import kotlin.collections.component1
 import kotlin.test.Test
 import org.junit.jupiter.api.BeforeAll
@@ -39,7 +38,7 @@ class AlgoLocalNetTest {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     internal class AlgoSDKTests {
 
-        private lateinit var alice: Bip32Ed25519<LazySodiumJava>
+        private lateinit var alice: Bip32Ed25519
         private lateinit var algod: AlgodClient
         private lateinit var indexer: IndexerClient
         private lateinit var token: String
@@ -61,7 +60,7 @@ class AlgoLocalNetTest {
                             )
                             .toSeed()
 
-            alice = Bip32Ed25519(ls, aliceSeed)
+            alice = Bip32Ed25519(aliceSeed)
 
             // Token to sandbox
             token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
