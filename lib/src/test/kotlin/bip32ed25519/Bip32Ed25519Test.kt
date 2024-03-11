@@ -64,7 +64,7 @@ class Bip32Ed25519Test {
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class KeyGenTests {
 
-                private lateinit var c: Bip32Ed25519
+                private lateinit var c: Bip32Ed25519<LazySodiumJava>
 
                 @BeforeAll
                 fun setup() {
@@ -765,7 +765,7 @@ class Bip32Ed25519Test {
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class SignTypedDataTests {
-                private lateinit var c: Bip32Ed25519
+                private lateinit var c: Bip32Ed25519<LazySodiumJava>
 
                 @BeforeAll
                 fun setup() {
@@ -1071,8 +1071,8 @@ class Bip32Ed25519Test {
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class ECDHTests {
 
-                private lateinit var alice: Bip32Ed25519
-                private lateinit var bob: Bip32Ed25519
+                private lateinit var alice: Bip32Ed25519<LazySodiumJava>
+                private lateinit var bob: Bip32Ed25519<LazySodiumJava>
 
                 @BeforeAll
                 fun setup() {
