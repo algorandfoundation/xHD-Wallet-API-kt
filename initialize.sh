@@ -8,7 +8,7 @@ cd lazysodium-java
 
 echo "Copying lazysodium-java to bip32ed25519kotlin/libs..."
 cd ..
-mkdir -p lib/libs
+mkdir -p bip32ed25519/libs/
 mv lazysodium-java/build/libs/* bip32ed25519/libs/
 
 echo "Running tests..."
