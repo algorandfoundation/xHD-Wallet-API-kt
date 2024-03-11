@@ -60,7 +60,7 @@ class AlgoLocalNetTest {
                             )
                             .toSeed()
 
-            alice = Bip32Ed25519(aliceSeed)
+            alice = Bip32Ed25519(ls, aliceSeed)
 
             // Token to sandbox
             token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

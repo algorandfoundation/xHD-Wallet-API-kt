@@ -21,7 +21,10 @@ import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
 import com.algorand.algosdk.crypto.Address
 import com.algorand.algosdk.kmd.client.model.*
+import com.goterl.lazysodium.LazySodiumJava
+import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.Key
+import com.goterl.lazysodium.utils.LibraryLoader
 import java.util.Base64
 import kotlin.collections.component1
 import kotlin.test.Test
@@ -41,7 +44,9 @@ fun helperStringToByteArray(input: String): ByteArray {
                         .map { it.toByte() }
                         .toByteArray()
 }
-
+/*
+ * Helper function that converts a hex string into a byte array
+ */
 fun helperHexStringToByteArray(s: String): ByteArray {
         val result = ByteArray(s.length / 2)
         for (i in 0 until s.length step 2) {
@@ -50,6 +55,9 @@ fun helperHexStringToByteArray(s: String): ByteArray {
         }
         return result
 }
+
+// Load the lazy sodium library, desktop version
+val ls: LazySodiumJava = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
 
 class Bip32Ed25519Test {
 
@@ -64,7 +72,7 @@ class Bip32Ed25519Test {
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
-                        c = Bip32Ed25519(seed.toSeed())
+                        c = Bip32Ed25519(ls, seed.toSeed())
                 }
 
                 @Test
@@ -765,7 +773,7 @@ class Bip32Ed25519Test {
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
-                        c = Bip32Ed25519(seed.toSeed())
+                        c = Bip32Ed25519(ls, seed.toSeed())
                 }
 
                 @Test
@@ -1079,8 +1087,8 @@ class Bip32Ed25519Test {
                                                                         "identify length ranch make silver fog much puzzle borrow relax occur drum blue oval book pledge reunion coral grace lamp recall fever route carbon".toCharArray()
                                                         )
                                                         .toSeed()
-                        alice = Bip32Ed25519(aliceSeed)
-                        bob = Bip32Ed25519(bobSeed)
+                        alice = Bip32Ed25519(ls, aliceSeed)
+                        bob = Bip32Ed25519(ls, bobSeed)
                 }
 
                 @Test
@@ -1184,12 +1192,7 @@ class Bip32Ed25519Test {
                                         )
 
                         // Encrypt
-                        val ciphertext =
-                                        Bip32Ed25519.lazySodium.cryptoSecretBoxEasy(
-                                                        message,
-                                                        nonce,
-                                                        aliceSharedSecret
-                                        )
+                        val ciphertext = ls.cryptoSecretBoxEasy(message, nonce, aliceSharedSecret)
 
                         assert(
                                         ciphertext.equals(
@@ -1239,7 +1242,7 @@ class Bip32Ed25519Test {
 
                         // Decrypt
                         val plaintext =
-                                        Bip32Ed25519.lazySodium.cryptoSecretBoxOpenEasy(
+                                        ls.cryptoSecretBoxOpenEasy(
                                                         ciphertext,
                                                         nonce,
                                                         aliceSharedSecret
