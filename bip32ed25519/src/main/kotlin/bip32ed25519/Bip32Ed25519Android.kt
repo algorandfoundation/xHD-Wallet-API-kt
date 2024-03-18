@@ -24,9 +24,8 @@ import com.algorand.algosdk.transaction.Transaction
 import com.algorand.algosdk.util.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper
-import com.goterl.lazysodium.LazySodiumJava
-import com.goterl.lazysodium.SodiumJava
-import com.goterl.lazysodium.utils.LibraryLoader
+import com.goterl.lazysodium.LazySodiumAndroid
+import com.goterl.lazysodium.SodiumAndroid
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -35,9 +34,9 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import org.msgpack.jackson.dataformat.MessagePackFactory
 
-class Bip32Ed25519(private var seed: ByteArray) {
+class Bip32Ed25519Android(private var seed: ByteArray) {
     companion object {
-        val lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
+        val lazySodium = LazySodiumAndroid(SodiumAndroid())
         val prefixes =
                 listOf(
                         "appID",
