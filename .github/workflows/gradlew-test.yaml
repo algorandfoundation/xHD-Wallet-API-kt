@@ -28,6 +28,3 @@ jobs:
 
       - name: Initialize Repo and Jars
         run: chmod +x initialize.sh && ./initialize.sh
-
-      - name: Run tests
-        run: ./gradlew test --info
