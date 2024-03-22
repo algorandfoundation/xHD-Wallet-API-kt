@@ -35,16 +35,6 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import org.msgpack.jackson.dataformat.MessagePackFactory
 
-fun printer(bytes: ByteArray): String {
-    var s = "["
-    bytes.forEach { byte ->
-        val bs = byte.toUByte()
-        s = s + bs + ","
-    }
-    s = s + "]"
-    return s
-}
-
 class Bip32Ed25519(private var seed: ByteArray) {
     companion object {
         val lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
@@ -418,11 +408,6 @@ class Bip32Ed25519(private var seed: ByteArray) {
     fun keyGen(context: KeyContext, account: UInt, change: UInt, keyIndex: UInt): ByteArray {
         val rootKey: ByteArray = fromSeed(this.seed)
         val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
-
-        println(
-                "rootKey = ${printer(rootKey)},\nbip44path = ${bip44Path},\ngeneratedPrivateKey = ${printer(this.deriveKey(rootKey, bip44Path, true))},\n generatedPublicKey = ${printer(this.deriveKey(rootKey, bip44Path, false))}\n"
-        )
-
         return this.deriveKey(rootKey, bip44Path, false)
     }
 
