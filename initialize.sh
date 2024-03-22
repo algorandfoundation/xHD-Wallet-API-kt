@@ -1,3 +1,5 @@
+set -e
+
 echo "Initializing..."
 echo "Cloning lazysodium-java..."
 rm -r lazysodium-java && git submodule init && git submodule update
