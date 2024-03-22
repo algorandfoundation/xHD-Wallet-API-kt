@@ -23,6 +23,9 @@
 hs_err_pid*
 replay_pid*
 
+# Ignore build outputs
+dist/
+
 # Ignore Gradle project-specific cache directory
 .gradle
 
