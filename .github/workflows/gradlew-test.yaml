@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  test-and-build:
+  run-initialize-sh:
     runs-on: ubuntu-latest
 
     steps:
