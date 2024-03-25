@@ -8,7 +8,7 @@ enum class KeyContext(val value: Int) {
 }
 
 enum class Encoding {
-    CBOR,
+    // CBOR, // CBOR is not yet supported across all platforms
     MSGPACK,
     BASE64,
     NONE
