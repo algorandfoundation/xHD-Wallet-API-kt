@@ -17,13 +17,14 @@
 
 package bip32ed25519
 
+// import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper // CBOR is not yet supported
+// across all platforms
 import com.algorand.algosdk.crypto.Address
 import com.algorand.algosdk.crypto.Signature
 import com.algorand.algosdk.transaction.SignedTransaction
 import com.algorand.algosdk.transaction.Transaction
 import com.algorand.algosdk.util.*
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
@@ -132,12 +133,12 @@ class Bip32Ed25519(private var seed: ByteArray) {
             val decoded: ByteArray =
                     when (metadata.encoding) {
                         Encoding.BASE64 -> Base64.getDecoder().decode(message)
-                        Encoding.CBOR ->
-                                ObjectMapper()
-                                        .writeValueAsString(
-                                                CBORMapper().readValue(message, Map::class.java)
-                                        )
-                                        .toByteArray()
+                        // Encoding.CBOR -> // CBOR is not yet supported across all platforms
+                        //         ObjectMapper()
+                        //                 .writeValueAsString(
+                        //                         CBORMapper().readValue(message, Map::class.java)
+                        //                 )
+                        //                 .toByteArray()
                         Encoding.MSGPACK ->
                                 ObjectMapper()
                                         .writeValueAsString(
@@ -147,11 +148,6 @@ class Bip32Ed25519(private var seed: ByteArray) {
                                         .toByteArray()
                         Encoding.NONE -> message
                     }
-
-            // Check after decoding too
-            if (hasAlgorandTags(decoded)) {
-                throw DataValidationException("Data contains Algorand tags")
-            }
 
             // Validate with schema
             try {
@@ -408,7 +404,6 @@ class Bip32Ed25519(private var seed: ByteArray) {
     fun keyGen(context: KeyContext, account: UInt, change: UInt, keyIndex: UInt): ByteArray {
         val rootKey: ByteArray = fromSeed(this.seed)
         val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
-
         return this.deriveKey(rootKey, bip44Path, false)
     }
 

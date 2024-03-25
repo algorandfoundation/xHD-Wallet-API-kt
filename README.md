@@ -4,6 +4,8 @@ A Kotlin implementation of ARC-0052 Algorand, in accordance with the paper BIP32
 
 Note that this library has not undergone audit and is not recommended for production use.
 
+Currently there are two folders, one to create an .aar file for use in Android, another to prepare .jar files for use in standard Kotlin desktop use-cases.
+
 ## Installation
 
 This library uses a forked version of LazySodium-Java that exposes Ed25519 operations. The fork has been added as a Git Submodule. It needs to be initialized, built and have its .jar files moved into lib/libs at the root level of this repository.
@@ -11,6 +13,8 @@ This library uses a forked version of LazySodium-Java that exposes Ed25519 opera
 ```bash
 ./initialize.sh
 ```
+
+Running this will create a dist/ folder containing the .aar and .jar files respectively. These can be imported in your project.
 
 ### Note: For Linux Users
 
@@ -25,6 +29,10 @@ apt-get install -y libsodium-dev
 ```
 
 You might be required to install using `sudo` privileges.
+
+## CI/CD
+
+Github Workflows are used. `./initialize.sh`is called, which attempts to build the Android and Desktop libraries and output .aar respectively .jar files. By default `./gradlew build` also runs `./gradlew test`.
 
 ## How to Use
 

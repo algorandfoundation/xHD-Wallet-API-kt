@@ -1,11 +1,11 @@
-name: Run Gradle Test
+name: Attempt a build with Gradle
 
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  test-and-build:
+  run-initialize-sh:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,11 +23,5 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
-      - name: Run Gradle Wrapper
-        run: chmod +x gradlew && gradle wrapper
-
-      - name: Initialize Repo and Jars
+      - name: Initialize submodule, generate jars, and build (including tests)
         run: chmod +x initialize.sh && ./initialize.sh
-
-      - name: Run tests
-        run: ./gradlew test --info
