@@ -30,6 +30,10 @@ apt-get install -y libsodium-dev
 
 You might be required to install using `sudo` privileges.
 
+## CI/CD
+
+Github Workflows are used. `./initialize.sh`is called, which attempts to build the Android and Desktop libraries and output .aar respectively .jar files. By default `./gradlew build` also runs `./gradlew test`.
+
 ## How to Use
 
 Initialize an instance of Bip32Ed25519 with seed bytes:
