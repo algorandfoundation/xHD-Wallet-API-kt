@@ -149,11 +149,6 @@ class Bip32Ed25519(private var seed: ByteArray) {
                         Encoding.NONE -> message
                     }
 
-            // Check after decoding too
-            if (hasAlgorandTags(decoded)) {
-                throw DataValidationException("Data contains Algorand tags")
-            }
-
             // Validate with schema
             try {
                 return metadata.schema.validateBasic(String(decoded)).valid
