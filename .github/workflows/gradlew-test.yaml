@@ -1,4 +1,4 @@
-name: Run Gradle Test
+name: Attempt a build with Gradle
 
 on:
   pull_request:
@@ -23,5 +23,5 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
-      - name: Initialize Repo and Jars
+      - name: Initialize submodule, generate jars, and build (including tests)
         run: chmod +x initialize.sh && ./initialize.sh
