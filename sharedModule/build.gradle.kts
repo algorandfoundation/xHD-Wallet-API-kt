@@ -17,11 +17,11 @@ dependencies {
     implementation("com.goterl:resource-loader:2.0.2")
 
     // Bip39 implementation
-    implementation("cash.z.ecc.android:kotlin-bip39:1.0.7") 
+    api("cash.z.ecc.android:kotlin-bip39:1.0.7") 
 
     // For data validation
-    implementation("net.pwall.json:json-kotlin-schema:0.46")
-    implementation("com.algorand:algosdk:2.4.0")
+    api("net.pwall.json:json-kotlin-schema:0.46")
+    api("com.algorand:algosdk:2.4.0")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
@@ -32,23 +32,6 @@ dependencies {
     implementation("org.msgpack:jackson-dataformat-msgpack:0.9.8")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.16.1")
 
-    
-
-
-    // Use the Kotlin JUnit 5 integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-
-    // Use the JUnit 5 integration.
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
-
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    // api("org.apache.commons:commons-math3:3.6.1")
-
-    // This dependency is used internally, and not exposed to consumers on their own compile
-    // classpath.
-    implementation("com.google.guava:guava:31.0.1-jre")
 }
 
 

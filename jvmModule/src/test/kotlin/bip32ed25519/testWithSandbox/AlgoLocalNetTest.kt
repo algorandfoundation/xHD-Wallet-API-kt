@@ -38,7 +38,7 @@ class AlgoLocalNetTest {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     internal class AlgoSDKTests {
 
-        private lateinit var alice: Bip32Ed25519Desktop
+        private lateinit var alice: Bip32Ed25519JVM
         private lateinit var algod: AlgodClient
         private lateinit var indexer: IndexerClient
         private lateinit var token: String
@@ -60,7 +60,7 @@ class AlgoLocalNetTest {
                             )
                             .toSeed()
 
-            alice = Bip32Ed25519Desktop(aliceSeed)
+            alice = Bip32Ed25519JVM(aliceSeed)
 
             // Token to sandbox
             token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

@@ -21,6 +21,6 @@ import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
 
-class Bip32Ed25519Desktop(private var seed: ByteArray) : Bip32Ed25519Base(seed) {
+class Bip32Ed25519JVM(private var seed: ByteArray) : Bip32Ed25519Base(seed) {
     override val lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
 }

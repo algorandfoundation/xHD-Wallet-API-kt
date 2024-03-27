@@ -64,7 +64,7 @@ class Bip32Ed25519Test {
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class KeyGenTests {
 
-                private lateinit var c: Bip32Ed25519Desktop
+                private lateinit var c: Bip32Ed25519JVM
 
                 @BeforeAll
                 fun setup() {
@@ -72,7 +72,7 @@ class Bip32Ed25519Test {
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
-                        c = Bip32Ed25519Desktop(seed.toSeed())
+                        c = Bip32Ed25519JVM(seed.toSeed())
                 }
 
                 @Test
@@ -763,7 +763,7 @@ class Bip32Ed25519Test {
 
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class SignTypedDataTests {
-                private lateinit var c: Bip32Ed25519Desktop
+                private lateinit var c: Bip32Ed25519JVM
 
                 @BeforeAll
                 fun setup() {
@@ -771,7 +771,7 @@ class Bip32Ed25519Test {
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
-                        c = Bip32Ed25519Desktop(seed.toSeed())
+                        c = Bip32Ed25519JVM(seed.toSeed())
                 }
 
                 @Test
@@ -1076,8 +1076,8 @@ class Bip32Ed25519Test {
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         internal class ECDHTests {
 
-                private lateinit var alice: Bip32Ed25519Desktop
-                private lateinit var bob: Bip32Ed25519Desktop
+                private lateinit var alice: Bip32Ed25519JVM
+                private lateinit var bob: Bip32Ed25519JVM
 
                 @BeforeAll
                 fun setup() {
@@ -1092,8 +1092,8 @@ class Bip32Ed25519Test {
                                                                         "identify length ranch make silver fog much puzzle borrow relax occur drum blue oval book pledge reunion coral grace lamp recall fever route carbon".toCharArray()
                                                         )
                                                         .toSeed()
-                        alice = Bip32Ed25519Desktop(aliceSeed)
-                        bob = Bip32Ed25519Desktop(bobSeed)
+                        alice = Bip32Ed25519JVM(aliceSeed)
+                        bob = Bip32Ed25519JVM(bobSeed)
                 }
 
                 @Test

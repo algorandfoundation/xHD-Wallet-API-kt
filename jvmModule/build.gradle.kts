@@ -10,6 +10,7 @@ group = "com.algorandfoundation.bip32ed25519"
 
 plugins {
     kotlin("plugin.serialization") version "1.9.22"
+    kotlin("jvm")
     `java-library`
 }
 
@@ -22,7 +23,22 @@ java {
 
 dependencies {
     implementation(project(":sharedModule"))
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+    implementation(fileTree(mapOf("dir" to "../sharedModule/libs", "include" to listOf("*.jar"))))
+    
+    // Use the Kotlin JUnit 5 integration.
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+
+    // Use the JUnit 5 integration.
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // This dependency is exported to consumers, that is to say found on their compile classpath.
+    // api("org.apache.commons:commons-math3:3.6.1")
+
+    // This dependency is used internally, and not exposed to consumers on their own compile
+    // classpath.
+    implementation("com.google.guava:guava:31.0.1-jre")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
