@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        archivesBaseName = "Bip32Ed25519" + "-" + version
+        archivesBaseName = "Bip32Ed25519-Android-" + version
         namespace "com.algorandfoundation.bip32ed25519"
         minSdkVersion 26
         targetSdkVersion 33
@@ -30,6 +30,7 @@ android {
 
     sourceSets {
         main {
+            java.srcDirs = ['../sharedModule/src/main/kotlin']
             jni.srcDirs = []
             jniLibs.srcDirs = ['src/main/jniLibs']
         }
@@ -46,10 +47,9 @@ android {
 }
 
 dependencies {
-    implementation project(':sharedModule')
-    implementation fileTree(dir: '../sharedModule/libs', include: ['*.jar'])
+    api project(':sharedModule')
+    api fileTree(dir: '../sharedModule/libs', include: '*.jar')
 }
-
 
 task copyAarToRoot(type: Copy) {
     dependsOn assemble

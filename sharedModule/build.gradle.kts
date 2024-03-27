@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.9.22"
+    `java-library`
 }
 
 group = "com.algorandfoundation.bip32ed25519"
@@ -10,11 +11,11 @@ version = "0.1.0"
 
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+    api(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib"))
     
-    implementation("net.java.dev.jna:jna:5.12.1")
-    implementation("com.goterl:resource-loader:2.0.2")
+    api("net.java.dev.jna:jna:5.12.1")
+    api("com.goterl:resource-loader:2.0.2")
 
     // Bip39 implementation
     api("cash.z.ecc.android:kotlin-bip39:1.0.7") 
@@ -24,13 +25,13 @@ dependencies {
     api("com.algorand:algosdk:2.4.0")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
-    implementation("com.fasterxml.jackson.core:jackson-core:2.16.1")
-    implementation("org.msgpack:jackson-dataformat-msgpack:0.9.8")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.16.1")
+    api("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+    api("com.fasterxml.jackson.core:jackson-core:2.16.1")
+    api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.16.1")
 
 }
 

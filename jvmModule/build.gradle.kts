@@ -22,8 +22,7 @@ java {
 
 
 dependencies {
-    implementation(project(":sharedModule"))
-    implementation(fileTree(mapOf("dir" to "../sharedModule/libs", "include" to listOf("*.jar"))))
+    api(project(":sharedModule"))
     
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
@@ -57,4 +56,20 @@ tasks.named<Test>("test") {
 tasks.register<Test>("testWithAlgorandSandbox") {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
+}
+
+tasks.jar {
+    archiveFileName.set("Bip32Ed25519-JVM-$version.jar")
+}
+
+task("copyJarToRoot", type = Copy::class) {
+    dependsOn("assemble")
+
+    from("$buildDir/libs")
+    into("$rootDir/build")
+    include("*.jar")
+}
+
+tasks.named("build") {
+    finalizedBy("copyJarToRoot")
 }

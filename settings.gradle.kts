@@ -28,6 +28,4 @@ dependencyResolutionManagement {
 
 
 rootProject.name = "Bip32Ed25519"
-include(":androidModule")
-include(":jvmModule")
-include(":sharedModule")
+include(":sharedModule", ":androidModule")//, ":jvmModule")
