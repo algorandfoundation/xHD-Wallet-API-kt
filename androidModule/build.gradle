@@ -1,0 +1,50 @@
+version = "0.1.0"
+group = "com.algorandfoundation.bip32ed25519"
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+
+android {
+    compileSdkVersion 34
+    buildToolsVersion "33.0.3"
+
+    buildFeatures {
+        viewBinding = true
+    }
+
+    defaultConfig {
+        namespace "com.algorandfoundation.bip32ed25519"
+        minSdkVersion 26
+        targetSdkVersion 33
+        versionCode 16
+        versionName "0.1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
+
+    sourceSets {
+        main {
+            jni.srcDirs = []
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+dependencies {
+    implementation project(':sharedModule')
+    implementation fileTree(dir: '../sharedModule/libs', include: ['*.jar'])
+}
