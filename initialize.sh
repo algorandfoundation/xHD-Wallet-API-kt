@@ -15,7 +15,3 @@ find lazysodium-java/build/libs/ -type f \( -name "lazysodium-java-*-javadoc.jar
 echo "Attempting to build"
 gradle wrapper
 ./gradlew build
-
-mkdir -p dist/android && mkdir -p dist/jvm
-cp androidModule/build/outputs/aar/*-release.aar dist/android/
-cp sharedModule/libs/*.jar jvmModule/build/libs/*.jar dist/jvm/
