@@ -32,6 +32,7 @@ import com.algorand.algosdk.v2.client.common.IndexerClient
 import kotlin.collections.component1
 import kotlin.test.Test
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
 
 class AlgoLocalNetTest {
@@ -51,7 +52,7 @@ class AlgoLocalNetTest {
         // algokit sandbox/localnet
 
         @BeforeAll
-        // @Tag("sandbox")
+        @Tag("sandbox")
         fun setup() {
             // Setup Alice's HD wallet
             val aliceSeed =
@@ -163,7 +164,7 @@ class AlgoLocalNetTest {
         }
 
         @Test
-        // @Tag("sandbox")
+        @Tag("sandbox")
         fun verifyBase32AddressesDifferent() {
             val HDAddresses = mutableListOf<Address>()
             for (i in 0..5) {
@@ -196,7 +197,7 @@ class AlgoLocalNetTest {
         }
 
         @Test
-        // @Tag("sandbox")
+        @Tag("sandbox")
         fun verifyECDHFromAdresses() {
             // Verify that ECDH works when grabbing someone's Algorand base32 address
 
@@ -222,7 +223,7 @@ class AlgoLocalNetTest {
         }
 
         @Test
-        // @Tag("sandbox")
+        @Tag("sandbox")
         fun verifySignAlgorandTx() {
             val alicePK = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
             val aliceAddress = Address(alicePK)
