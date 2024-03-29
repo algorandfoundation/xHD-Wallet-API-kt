@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package bip32ed25519
+package com.algorandfoundation.bip32ed25519
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
 import com.algorand.algosdk.crypto.Address
-import com.algorand.algosdk.kmd.client.model.*
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.Key
@@ -1070,6 +1069,35 @@ class Bip32Ed25519Test {
                         } catch (e: DataValidationException) {
                                 assert(true) { "Wrong exception was thrown" }
                         }
+                }
+
+                @Test
+                fun verifyAlgorandTx() {
+                        val pk = c.keyGen(KeyContext.Address, 0u, 0u, 0u)
+                        // this transaction wes successfully submitted to the network
+                        // https://testnet.explorer.perawallet.app/tx/UJG3NVCSCW5A63KPV35BPAABLXMXTTEM2CVUKNS4EML3H3EYGMCQ/
+                        // in accordance with the Typescript implementation
+                        val prefixEncodedTx =
+                                        Base64.getDecoder()
+                                                        .decode(
+                                                                        "VFiJo2FtdM0D6KNmZWXNA+iiZnbOAkeSd6NnZW6sdGVzdG5ldC12MS4womdoxCBIY7UYpLPITsgQ8i1PEIHLD3HwWaesIN7GL39w5Qk6IqJsds4CR5Zfo3JjdsQgYv6DK3rRBUS+gzemcENeUGSuSmbne9eJCXZbRrV2pvOjc25kxCBi/oMretEFRL6DN6ZwQ15QZK5KZud714kJdltGtXam86R0eXBlo3BheQ=="
+                                                        )
+                        val sig =
+                                        c.signAlgoTransaction(
+                                                        KeyContext.Address,
+                                                        0u,
+                                                        0u,
+                                                        0u,
+                                                        prefixEncodedTx
+                                        )
+
+                        assert(
+                                        encodeAddress(pk)
+                                                        .equals(
+                                                                        "ML7IGK322ECUJPUDG6THAQ26KBSK4STG4555PCIJOZNUNNLWU3Z3ZFXITA"
+                                                        )
+                        )
+                        assert(c.verifyWithPublicKey(sig, prefixEncodedTx, pk))
                 }
         }
 

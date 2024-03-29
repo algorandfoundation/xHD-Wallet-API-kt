@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package bip32ed25519
+package com.algorandfoundation.bip32ed25519
 
 // import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper // CBOR is not yet supported
 // across all platforms
-import com.algorand.algosdk.crypto.Address
-import com.algorand.algosdk.crypto.Signature
-import com.algorand.algosdk.transaction.SignedTransaction
-import com.algorand.algosdk.transaction.Transaction
-import com.algorand.algosdk.util.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.goterl.lazysodium.LazySodium
 import java.math.BigInteger
@@ -459,27 +454,9 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
             account: UInt,
             change: UInt,
             keyIndex: UInt,
-            tx: Transaction,
-    ): SignedTransaction {
-
-        val prefixEncodedTx = tx.bytesToSign()
-        val pk = this.keyGen(context, account, change, keyIndex)
-        val pkAddress = Address(pk)
-
-        val txSig =
-                Signature(
-                        rawSign(
-                                getBIP44PathFromContext(context, account, change, keyIndex),
-                                prefixEncodedTx.copyOf()
-                        )
-                )
-
-        val stx = SignedTransaction(tx, txSig, tx.txID())
-
-        if (tx.sender != pkAddress) {
-            stx.authAddr(pkAddress)
-        }
-        return stx
+            prefixEncodedTx: ByteArray,
+    ): ByteArray {
+        return rawSign(getBIP44PathFromContext(context, account, change, keyIndex), prefixEncodedTx)
     }
 
     /**

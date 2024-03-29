@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package bip32ed25519
+package com.algorandfoundation.bip32ed25519
 
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava

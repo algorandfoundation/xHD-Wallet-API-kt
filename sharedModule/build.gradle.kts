@@ -13,7 +13,8 @@ version = "0.1.0"
 dependencies {
     api(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(kotlin("stdlib"))
-    
+
+    api("commons-codec:commons-codec:1.16.1")
     api("net.java.dev.jna:jna:5.12.1")
     api("com.goterl:resource-loader:2.0.2")
 
@@ -22,7 +23,6 @@ dependencies {
 
     // For data validation
     api("net.pwall.json:json-kotlin-schema:0.46")
-    api("com.algorand:algosdk:2.4.0")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

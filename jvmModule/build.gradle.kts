@@ -17,12 +17,18 @@ plugins {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-
 }
 
+sourceSets {
+    main {
+        java.setSrcDirs(setOf(file("../sharedModule/src/main/kotlin")))
+    }
+}
 
 dependencies {
     api(project(":sharedModule"))
+    
+    testImplementation("com.algorand:algosdk:2.4.0")
     
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
