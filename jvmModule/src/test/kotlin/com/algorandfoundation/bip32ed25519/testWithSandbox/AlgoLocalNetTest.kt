@@ -255,6 +255,7 @@ class AlgoLocalNetTest {
             val pk = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
             val pkAddressSDK = Address(pk)
 
+            // compare address encoding in AlgoSDK with this package
             assert(pkAddressSDK.toString() == encodeAddress(pk)) {
                 "This package's address encoding does not match SDK's address encoding"
             }
