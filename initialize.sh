@@ -1,3 +1,6 @@
+#!/bin/bash
+## This script is used to setup the project
+
 set -e
 
 echo "Initializing..."
@@ -8,26 +11,21 @@ echo "Building lazysodium-java..."
 cd lazysodium-java
 ./gradlew build
 
-echo "Copying lazysodium-java to bip32ed25519kotlin/libs..."
+echo "Copying lazysodium-java to sharedModule/libs..."
 cd ..
-echo "Copying to Android..."
-find lazysodium-java/build/libs/ -type f \( -name "lazysodium-java-*-javadoc.jar" -o -name "lazysodium-java-*.jar" \) ! -name "*-sources.jar" -exec cp {} android/bip32ed25519/libs/ \;
-echo "Copying to Desktop..."
-cp lazysodium-java/build/libs/* desktop/bip32ed25519/libs/
+find lazysodium-java/build/libs/ -type f \( -name "lazysodium-java-*-javadoc.jar" -o -name "lazysodium-java-*.jar" \) ! -name "*-sources.jar" -exec cp {} sharedModule/libs/ \;
 
-echo "Attempting to build Android..."
-cd android
+echo "Attempting to build"
 gradle wrapper
 ./gradlew build
-./gradlew assemble
-cd ..
 
-echo "Attempting to build..."
-cd desktop
-gradle wrapper
-./gradlew build
-cd ..
-
-mkdir -p dist/android && mkdir -p dist/desktop
-cp android/bip32ed25519/build/outputs/aar/*-release.aar dist/android/
-cp desktop/bip32ed25519/build/libs/*.jar desktop/bip32ed25519/libs/*.jar dist/desktop/
+echo "Checking if Bip32Ed25519-Android*.aar and Bip32Ed25519-JVM*.jar exist in build/ directory..."
+for pattern in 'build/Bip32Ed25519-Android*.aar' 'build/Bip32Ed25519-JVM*.jar'; do
+    files=( $pattern )
+    if [ -e "${files[0]}" ]; then
+        echo "Build files matching expected $pattern exist."
+    else
+        echo "No files matching $pattern found."
+        exit 0
+    fi
+done

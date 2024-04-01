@@ -14,7 +14,7 @@ This library uses a forked version of LazySodium-Java that exposes Ed25519 opera
 ./initialize.sh
 ```
 
-Running this will create a dist/ folder containing the .aar and .jar files respectively. These can be imported in your project.
+Running this will create a build/ folder containing the Bip32Ed25519-Android...aar and Bip32Ed25519-JVM-...jar files respectively. These can be imported in your project.
 
 ### Note: For Linux Users
 
