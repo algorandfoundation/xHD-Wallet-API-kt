@@ -36,10 +36,12 @@ Github Workflows are used. `./initialize.sh`is called, which attempts to build t
 
 ## How to Use
 
-Initialize an instance of Bip32Ed25519 with seed bytes:
+Below we refer to Bip32Ed25519JVM but the same examples work for Bip32Ed25519Android.
+
+Initialize an instance of Bip32Ed25519JVM with seed bytes:
 
 ```kotlin
-    val alice = Bip32Ed25519(seedBytes)
+    val alice = Bip32Ed25519JVM(seedBytes)
 ```
 
 Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39` to use a seed phrase instead:
@@ -47,7 +49,7 @@ Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39
 ```kotlin
     val seed = MnemonicCode(
                 "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
-    val alice = Bip32Ed25519(seed.toSeed())
+    val alice = Bip32Ed25519JVM(seed.toSeed())
 ```
 
 Obviously do NOT make use of that seed phrase!
@@ -129,11 +131,11 @@ They can then use this shared secret for encrypting data.
 
 ### Signing An Algorand Transaction
 
-Alice can turn her public key into an Algorand address using the AlgoSDK for Java
+Alice can turn her public key into an Algorand encoded address using encodeAddress from utils:
 
 ```kotlin
 val alicePK = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
-val aliceAddress = Address(alicePK)
+val aliceAddress = encodeAddress(alicePK)
 println("Alice's Algorand Address: ${aliceAddress.toString()}")
 ```
 
@@ -141,6 +143,8 @@ Assume that it gets funded by someone. Alice can then start signing her own tran
 
 ```kotlin
 // Let's have Alice send a tx!
+
+// Construct the TX:
 val tx =
         Transaction.PaymentTransactionBuilder()
                 .lookupParams(algod) // lookup fee, firstValid, lastValid
@@ -150,18 +154,34 @@ val tx =
                 .noteUTF8("Keep the change!")
                 .build()
 
-val stx = alice.signAlgoTransaction(KeyContext.Address, 0u, 0u, 0u, tx) // An Algorand Signed Transaction object
-val stxBytes = Encoder.encodeToMsgPack(stx) // Encoded to bytes
+// Sign the TX with this library:
+val sig = alice.signAlgoTransaction(
+                            KeyContext.Address,
+                            0u,
+                            0u,
+                            0u,
+                            tx.bytesToSign()
+                    )
 
-val post = algod.RawTransaction().rawtxn(stxBytes).execute() // Post the signed transaction to an AlgoD client.
+// Turn the sig into Algorand SDK's Signature type
+val txSig = Signature(sig)
+
+// Combine the sig with the constructed TX using SDK's SignedTransaction()
+val stx = SignedTransaction(tx, txSig, tx.txID())
+
+// Encode to msgpack bytes
+val stxBytes = Encoder.encodeToMsgPack(stx)
+
+// Post the SignedTransaction msgpack bytes to AlgoD
+val post = algod.RawTransaction().rawtxn(stxBytes).execute()
 
 if (!post.isSuccessful) { // Check if there was an issue
     throw RuntimeException("Failed to post transaction")
 }
 
 // We confirmed that Algod received the signed transaction. It has begun to propogate it to the network.
-// We wait for confirmation:
 
+// We wait for confirmation:
 var done = false
 while (!done) {
     val txInfo = algod.PendingTransactionInformation(post.body()?.txId).execute()
