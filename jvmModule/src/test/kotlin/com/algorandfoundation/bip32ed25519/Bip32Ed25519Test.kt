@@ -91,6 +91,33 @@ class Bip32Ed25519Test {
                 }
 
                 @Test
+                fun bip44PathTest() {
+                        val addressPath =
+                                        Bip32Ed25519Base.getBIP44PathFromContext(
+                                                        KeyContext.Address,
+                                                        0u,
+                                                        0u,
+                                                        0u
+                                        )
+                        val identityPath =
+                                        Bip32Ed25519Base.getBIP44PathFromContext(
+                                                        KeyContext.Identity,
+                                                        0u,
+                                                        0u,
+                                                        0u
+                                        )
+                        val expectedAPath = listOf(2147483692u, 2147483931u, 2147483648u, 0u, 0u)
+                        val expectedIPath = listOf(2147483692u, 2147483648u, 2147483648u, 0u, 0u)
+
+                        assert(addressPath.equals(expectedAPath)) {
+                                "addressPath and expectedAPath are not equal"
+                        }
+                        assert(identityPath.equals(expectedIPath)) {
+                                "identityPath and expectedIPath are not equal"
+                        }
+                }
+
+                @Test
                 fun deriveNonHardenedTest() {
                         val kl =
                                         helperStringToByteArray(
@@ -127,7 +154,7 @@ class Bip32Ed25519Test {
                 }
 
                 @Test
-                fun derivedHardenedTest() {
+                fun deriveHardenedTest() {
                         val kl =
                                         helperStringToByteArray(
                                                         "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
@@ -166,6 +193,96 @@ class Bip32Ed25519Test {
                                         )
                         ) {
                                 "ccProduced and deriveHardenedExpectedOutcomeChildChainCode are not equal"
+                        }
+                }
+
+                @Test
+                fun fromSeedTest() {
+
+                        val seed =
+                                        helperStringToByteArray(
+                                                        "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
+                                        )
+                        val expectedKL =
+                                        helperStringToByteArray(
+                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70"
+                                        )
+                        val expectedKR =
+                                        helperStringToByteArray(
+                                                        "148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5"
+                                        )
+                        val expectedC =
+                                        helperStringToByteArray(
+                                                        "121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                        )
+                        val expectedOutput = expectedKL + expectedKR + expectedC
+                        val output = Bip32Ed25519Base.fromSeed(seed)
+                        assert(output.contentEquals(expectedOutput)) {
+                                "produced fromSeed output and expectedOutput are not equal"
+                        }
+                }
+
+                @Test
+                fun deriveChildNodePrivateTest() {
+                        val index = Bip32Ed25519Base.harden(283u)
+                        val extendedKey =
+                                        helperStringToByteArray(
+                                                        "48,154,117,1,19,88,124,110,192,144,35,82,48,99,166,47,18,134,206,50,87,44,30,64,138,171,185,113,221,236,143,70,76,201,164,26,123,221,6,39,132,236,107,242,76,65,18,121,215,206,105,135,176,121,240,198,111,6,17,198,125,22,245,114,141,123,149,66,11,250,54,180,175,41,166,195,76,15,154,235,246,49,203,70,79,22,94,165,138,89,21,152,23,108,180,148"
+                                        )
+                        val expectedOutput =
+                                        helperStringToByteArray(
+                                                        "152,225,53,235,111,189,16,80,5,187,222,103,51,25,9,175,172,210,205,151,195,80,249,179,162,157,197,181,222,236,143,70, 235,179,35,29,125,172,171,5,131,195,126,183,57,159,45,69,232,136,154,57,174,63,130,164,117,24,105,139,121,92,17,211,107,102,4,2,204,196,48,71,244,82,253,123,214,63,171,147,161,188,133,206,203,205,213,26,83,29,133,228,82,216,30,127"
+                                        )
+
+                        val output = c.deriveChildNodePrivate(extendedKey, index)
+                        assert(output.contentEquals(expectedOutput)) {
+                                "produced deriveChildNodePrivate output and expectedOutput are not equal"
+                        }
+                        assert(output.size == 96) { "output size is not 96" }
+
+                        val index2 = 2147483648u
+                        val extendedKey2 =
+                                        helperStringToByteArray(
+                                                        "152,225,53,235,111,189,16,80,5,187,222,103,51,25,9,175,172,210,205,151,195,80,249,179,162,157,197,181,222,236,143,70,235,179,35,29,125,172,171,5,131,195,126,183,57,159,45,69,232,136,154,57,174,63,130,164,117,24,105,139,121,92,17,211,107,102,4,2,204,196,48,71,244,82,253,123,214,63,171,147,161,188,133,206,203,205,213,26,83,29,133,228,82,216,30,127"
+                                        )
+                        val expectedOutput2 =
+                                        helperStringToByteArray(
+                                                        "248,91,210,62,156,144,108,177,63,167,126,1,132,58,45,178,246,252,188,221,105,104,97,54,232,92,190,228,226,236,143,70,187,122,35,69,101,182,49,122,216,252,71,107,197,176,56,18,136,95,146,175,1,151,252,83,155,22,27,106,47,67,37,75,213,25,13,246,205,204,73,226,124,111,209,124,76,32,166,121,128,234,224,65,27,230,42,228,35,106,79,138,154,149,109,227"
+                                        )
+
+                        val output2 = c.deriveChildNodePrivate(extendedKey2, index2)
+                        assert(output2.contentEquals(expectedOutput2)) {
+                                "produced deriveChildNodePrivate output and expectedOutput are not equal"
+                        }
+                        assert(output2.size == 96) { "output size is not 96" }
+                }
+
+                @Test
+                fun deriveKeyTest() {
+                        val rootKey =
+                                        helperStringToByteArray(
+                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                        )
+                        val bip44Path = listOf(2147483692u, 2147483931u, 2147483648u, 0u, 0u)
+                        var isPrivate = false
+                        val expectedResultPublic =
+                                        helperStringToByteArray(
+                                                        "98,254,131,43,122,209,5,68,190,131,55,166,112,67,94,80,100,174,74,102,231,123,215,137,9,118,91,70,181,118,166,243"
+                                        )
+
+                        val outputPublic = c.deriveKey(rootKey, bip44Path, isPrivate)
+                        assert(outputPublic.contentEquals(expectedResultPublic)) {
+                                "produced deriveKey output (public key) and expected output are not equal"
+                        }
+
+                        isPrivate = true
+                        val expectedResultPrivate =
+                                        helperStringToByteArray(
+                                                        "128,16,43,185,143,170,195,253,23,137,194,198,197,89,211,113,92,217,202,194,40,214,212,176,247,106,35,70,234,236,143,70,1,174,20,40,64,137,36,62,147,107,233,27,40,35,204,20,47,117,49,53,234,255,27,174,32,211,238,199,120,112,197,68,159,146,199,144,215,171,174,224,224,10,78,193,251,120,161,212,56,232,204,247,194,186,217,160,24,165,191,154,93,81,0,117"
+                                        )
+                        val outputPrivate = c.deriveKey(rootKey, bip44Path, isPrivate)
+                        assert(outputPrivate.contentEquals(expectedResultPrivate)) {
+                                "produced deriveKey output (private key) and expected output are not equal"
                         }
                 }
 
@@ -1226,29 +1343,6 @@ class Bip32Ed25519Test {
 
                         // Encrypt
                         val ciphertext = ls.cryptoSecretBoxEasy(message, nonce, aliceSharedSecret)
-
-                        assert(
-                                        ciphertext.equals(
-                                                        "FB07303A391687989674F28A1A9B88FCA3D107227D87DADE662DFA3722"
-                                        ),
-                        ) {
-                                "produced ciphertext is not what was expected given hardcoded keys, nonce and 'Hello, World!' message"
-                        }
-
-                        // The hex string above is the same as the bytearray below.
-                        // This conversion is done for readability/visibility's sake,
-                        // when comparing with other language implementations
-
-                        assert(
-                                        helperHexStringToByteArray(ciphertext)
-                                                        .contentEquals(
-                                                                        helperStringToByteArray(
-                                                                                        "251,7,48,58,57,22,135,152,150,116,242,138,26,155,136,252,163,209,7,34,125,135,218,222,102,45,250,55,34"
-                                                                        )
-                                                        )
-                        ) {
-                                "produced ciphertext bytes is that what was expected given hardcoded ciphertext bytes"
-                        }
 
                         assert(
                                         ciphertext.equals(
