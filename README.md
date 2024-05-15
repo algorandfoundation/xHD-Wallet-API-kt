@@ -34,6 +34,30 @@ You might be required to install using `sudo` privileges.
 
 Github Workflows are used. `./initialize.sh`is called, which attempts to build the Android and Desktop libraries and output .aar respectively .jar files. By default `./gradlew build` also runs `./gradlew test`.
 
+### Creating a Release
+
+This project follows [Semantic Versioning](https://semver.org) guidelines.
+
+To create a new release, it is possible to create one directly through the GitHub interface.
+
+However, it is instead recommended to create a tag locally:
+
+```bash
+git tag -a v0.1.0 "Annotation"
+```
+
+This creates an annotated tag for version v0.1.0.
+
+```bash
+git push origin v0.1.0
+```
+
+This will push v0.1.0 to the repo, triggering a Github Workflow which produces a Release at that tag.
+
+Note that the action will check that the version tag matches the `version` field in `jvmModule/build.gradle.kts` and the `versionName`field in `androidModule/build.gradle`. Otherwise it will fail and no release will be made.
+
+Remember to start the version tag with v.
+
 ## How to Use
 
 Below we refer to Bip32Ed25519JVM but the same examples work for Bip32Ed25519Android.
