@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - feat/semver-release
+    tags:
+      - "v*.*.*"
 
 jobs:
   build:
