@@ -29,15 +29,15 @@ jobs:
 
       - name: Get version from androidModule
         id: get_version_android
-        run: echo ::set-output name=VERSION_ANDROID::$(grep "version" androidModule/build.gradle | awk '{print $2}' | tr -d "'")
+        run: echo ::set-output name=VERSION_ANDROID::$(grep "versionName" androidModule/build.gradle | awk -F\" '{print $2}')
 
       - name: Get version from jvmModule
         id: get_version_jvm
-        run: echo ::set-output name=VERSION_JVM::$(grep "version" jvmModule/build.gradle.kts | awk '{print $2}' | tr -d "'")
+        run: echo ::set-output name=VERSION_JVM::$(grep "version =" jvmModule/build.gradle.kts | awk -F\" '{print $2}')
 
       - name: Get tag name
         id: get_tag
-        run: echo ::set-output name=TAG_NAME::${GITHUB_REF/refs\/tags\//}
+        run: echo ::set-output name=TAG_NAME::${GITHUB_REF/refs\/tags\/v/}
 
       - name: Check versions
         run: |
