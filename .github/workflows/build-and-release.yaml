@@ -1,0 +1,56 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "adopt"
+
+      - name: Install system-wide LibSodium
+        run: sudo apt-get install -y libsodium-dev
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Initialize submodule, generate jars, and build (including tests)
+        run: chmod +x initialize.sh && ./initialize.sh
+
+      - name: Get version from androidModule
+        id: get_version_android
+        run: echo ::set-output name=VERSION_ANDROID::$(grep "version" androidModule/build.gradle | awk '{print $2}' | tr -d "'")
+
+      - name: Get version from jvmModule
+        id: get_version_jvm
+        run: echo ::set-output name=VERSION_JVM::$(grep "version" jvmModule/build.gradle.kts | awk '{print $2}' | tr -d "'")
+
+      - name: Get tag name
+        id: get_tag
+        run: echo ::set-output name=TAG_NAME::${GITHUB_REF/refs\/tags\//}
+
+      - name: Check versions
+        run: |
+          if [ "${{ steps.get_version_android.outputs.VERSION_ANDROID }}" != "${{ steps.get_tag.outputs.TAG_NAME }}" ] || [ "${{ steps.get_version_jvm.outputs.VERSION_JVM }}" != "${{ steps.get_tag.outputs.TAG_NAME }}" ]; then
+            echo "Version mismatch. Make sure the versions in androidModule/build.gradle and jvmModule/build.gradle.kts match the tag name."
+            exit 1
+          fi
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            ./build/Bip32Ed25519-JVM-*.jar
+            ./build/Bip32Ed25519-Android-*-release.aar
