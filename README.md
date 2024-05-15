@@ -6,6 +6,10 @@ Note that this library has not undergone audit and is not recommended for produc
 
 Currently there are two folders, one to create an .aar file for use in Android, another to prepare .jar files for use in standard Kotlin desktop use-cases.
 
+## Requirements
+
+This project uses. Gradle version 8.6.
+
 ## Installation
 
 This library uses a forked version of LazySodium-Java that exposes Ed25519 operations. The fork has been added as a Git Submodule. It needs to be initialized, built and have its .jar files moved into lib/libs at the root level of this repository.
