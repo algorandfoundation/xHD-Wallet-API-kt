@@ -8,7 +8,7 @@ Currently there are two folders, one to create an .aar file for use in Android, 
 
 ## Requirements
 
-This project uses. Gradle version 8.6.
+This project uses Gradle version 8.6.
 
 ## Installation
 
