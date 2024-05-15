@@ -16,7 +16,7 @@ cd ..
 find lazysodium-java/build/libs/ -type f \( -name "lazysodium-java-*-javadoc.jar" -o -name "lazysodium-java-*.jar" \) ! -name "*-sources.jar" -exec cp {} sharedModule/libs/ \;
 
 echo "Attempting to build"
-gradle wrapper
+gradle wrapper --gradle-version 8.6
 ./gradlew build
 
 echo "Checking if Bip32Ed25519-Android*.aar and Bip32Ed25519-JVM*.jar exist in build/ directory..."
