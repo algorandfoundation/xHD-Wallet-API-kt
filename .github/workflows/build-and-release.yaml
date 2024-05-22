@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - "release/v*"
 
 jobs:
   build:
@@ -35,22 +35,18 @@ jobs:
         id: get_version_jvm
         run: echo ::set-output name=VERSION_JVM::$(grep "version =" jvmModule/build.gradle.kts | awk -F\" '{print $2}')
 
-      - name: Get tag name
-        id: get_tag
-        run: echo ::set-output name=TAG_NAME::${GITHUB_REF/refs\/tags\/v/}
+      - name: Get branch name
+        id: get_branch
+        run: echo ::set-output name=BRANCH_NAME::${GITHUB_REF#refs/heads/release/v}
 
       - name: Check versions
         run: |
-          if [ "${{ steps.get_version_android.outputs.VERSION_ANDROID }}" != "${{ steps.get_tag.outputs.TAG_NAME }}" ] || [ "${{ steps.get_version_jvm.outputs.VERSION_JVM }}" != "${{ steps.get_tag.outputs.TAG_NAME }}" ]; then
-            echo "Version mismatch. Make sure the versions in androidModule/build.gradle and jvmModule/build.gradle.kts match the tag name."
+          if [ "${{ steps.get_version_android.outputs.VERSION_ANDROID }}" != "${{ steps.get_branch.outputs.BRANCH_NAME }}" ] || [ "${{ steps.get_version_jvm.outputs.VERSION_JVM }}" != "${{ steps.get_branch.outputs.BRANCH_NAME }}" ]; then
+            echo "Version mismatch. Make sure the versions in androidModule/build.gradle and jvmModule/build.gradle.kts match the branch name."
             exit 1
           fi
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          fail_on_unmatched_files: true
-          files: |
-            ./build/Bip32Ed25519-JVM-*.jar
-            ./build/Bip32Ed25519-Android-*-release.aar
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
