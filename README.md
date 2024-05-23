@@ -53,7 +53,7 @@ Afterwards, merge the branch back into `main`. `gradle.properties` which contain
 
 Note that `semantic-release`is called twice, once to only adjust the `gradle.properties`version, and a second time to actually publish the release. In the process of the first run a git tag is briefly created but it is deleted right after. This is a side-effect of using `semantic-release/exec` to run a script with access to the next-release version to update `gradle.properties`.
 
-These settings are specified in `.releaserc`, .`.adjustVersion/.releaserc`and the `build-and-release` github workflow.
+These settings are specified in `.releaserc`, .`.adjustVersion/.releaserc`and the `build-and-release` Github workflow.
 
 ## How to Use
 
