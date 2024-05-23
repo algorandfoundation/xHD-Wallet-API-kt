@@ -49,9 +49,11 @@ This project follows [Semantic Versioning](https://semver.org) guidelines and us
 
 To create a new release, branch off of `main` into a release branch, e.g. `release/next`. `semantic-release` will run, calculate the next version number based off of the commits, create a corresponding tag and produce a release. The release notes will have been populated from the older commits.
 
-Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by androidModule, jvmModule and sharedModule is also updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules.
+Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by androidModule, jvmModule and sharedModule will have also been updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules. A new commit will have been made by Github Actions bot.
 
-These settings are specified in `.releaserc` and the `build-and-release` github workflow.
+Note that `semantic-release`is called twice, once to only adjust the `gradle.properties`version, and a second time to actually publish the release. In the process of the first run a git tag is briefly created but it is deleted right after. This is a side-effect of using `semantic-release/exec` to run a script with access to the next-release version to update `gradle.properties`.
+
+These settings are specified in `.releaserc`, .`.adjustVersion/.releaserc`and the `build-and-release` github workflow.
 
 ## How to Use
 
