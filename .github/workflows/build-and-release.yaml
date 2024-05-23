@@ -24,7 +24,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Adjust Version in gradle.properties (and do nothing else)
+      - name: Adjust Version in gradle.properties (and delete any git tags created in the process)
         uses: cycjimmy/semantic-release-action@v4
         with:
           working_directory: ./.adjustVersion

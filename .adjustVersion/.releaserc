@@ -10,8 +10,8 @@
         "prepareCmd": ":",
         "addChannelCmd" : ":",
         "publishCmd": ":",
-        "successCmd": ":",
-        "failCmd": ":"
+        "successCmd": "git tag -d ${nextRelease.gitTag} && git push origin :refs/tags/${nextRelease.gitTag}",
+        "failCmd": "git tag -d ${nextRelease.gitTag} && git push origin :refs/tags/${nextRelease.gitTag}"
       }
     ]
   ]
