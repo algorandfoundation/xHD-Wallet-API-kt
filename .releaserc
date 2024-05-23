@@ -12,12 +12,6 @@
         ]
       }
     ],
-    [
-      "@semantic-release/exec",
-      {
-        "publishCmd": "perl -pi -e 's/^version=.*/version=${nextRelease.version}/' gradle.properties"
-      }
-    ],
     "@semantic-release/git"
   ]
 }

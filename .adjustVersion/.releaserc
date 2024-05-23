@@ -1,0 +1,13 @@
+{
+  "branches": ["release/v*"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "perl -pi -e 's/^version=.*/version=${nextRelease.version}/' gradle.properties"
+      }
+    ]
+  ]
+}

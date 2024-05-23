@@ -24,10 +24,19 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Initialize submodule, generate jars, and build (including tests)
+      - name: Run Semantic Release to Adjust Version in gradle.properties
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          working_directory: ./adjustVersion
+          extra_plugins: |
+            @semantic-release/exec
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Initialize submodule, generate .jar and .aar, and build (including tests)
         run: chmod +x initialize.sh && ./initialize.sh
 
-      - name: Run Semantic Release and Update gradle.properties version
+      - name: Run Semantic Release again to publish the release
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
