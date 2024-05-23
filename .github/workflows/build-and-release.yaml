@@ -1,4 +1,4 @@
-name: Build and Release
+name: Generate Release
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - "release/*"
 
 jobs:
-  build:
+  generate-release:
     runs-on: ubuntu-latest
 
     steps:
