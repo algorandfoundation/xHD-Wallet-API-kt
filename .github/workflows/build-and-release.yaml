@@ -34,6 +34,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Commit changes to gradle.properties
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add gradle.properties
+          git commit -m "chore: update version in gradle.properties" || (echo "gradle.properties never changed" && exit 1)
+
       - name: Initialize submodule, generate .jar and .aar, and build (including tests)
         run: chmod +x initialize.sh && ./initialize.sh
 
@@ -42,10 +49,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit and push changes to gradle.properties
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add gradle.properties
-          git commit -m "chore: update version in gradle.properties" || (echo "gradle.properties never changed" && exit 1)
-          git push origin HEAD:${{ github.ref }}
+      - name: Push changes to the branch
+        run: git push origin HEAD:${{ github.ref }}
