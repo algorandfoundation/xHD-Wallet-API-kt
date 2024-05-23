@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.algorandfoundation.bip32ed25519"
-version = "0.1.0"
+version = project.property("version") as String
 
 
 dependencies {

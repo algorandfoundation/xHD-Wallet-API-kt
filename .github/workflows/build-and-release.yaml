@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches:
-      - "release/v*"
+      - "release/*"
 
 jobs:
   build:
@@ -26,10 +26,6 @@ jobs:
 
       - name: Initialize submodule, generate jars, and build (including tests)
         run: chmod +x initialize.sh && ./initialize.sh
-
-      - name: Get branch name
-        id: get_branch
-        run: echo ::set-output name=BRANCH_NAME::${GITHUB_REF#refs/heads/release/v}
 
       - name: Run Semantic Release and Update gradle.properties version
         uses: cycjimmy/semantic-release-action@v4

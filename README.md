@@ -45,15 +45,13 @@ Github Workflows are used. `./initialize.sh`is called, which attempts to build t
 
 ### Creating a Release
 
-This project follows [Semantic Versioning](https://semver.org) guidelines.
+This project follows [Semantic Versioning](https://semver.org) guidelines and uses `semantic-release` to enforce it.
 
-To create a new release, branch off of `main` into a release branch, e.g. `release/v.1.0.0`
+To create a new release, branch off of `main` into a release branch, e.g. `release/next`. `semantic-release` will run, calculate the next version number based off of the commits, create a corresponding tag and produce a release. The release notes will have been populated from the older commits.
 
-This will push v1.0.0 to the repo, triggering a Github Workflow which creates a Tag and a Release at that tag.
+Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by androidModule, jvmModule and sharedModule is also updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules.
 
-Note that the action will check that the version tag matches the `version` field in `jvmModule/build.gradle.kts` and the `versionName`field in `androidModule/build.gradle`. Otherwise it will fail and no release will be made.
-
-Remember to start the version tag with v.
+These settings are specified in `.releaserc` and the `build-and-release` github workflow.
 
 ## How to Use
 
