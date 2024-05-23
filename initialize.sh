@@ -26,6 +26,6 @@ for pattern in 'build/Bip32Ed25519-Android*.aar' 'build/Bip32Ed25519-JVM.jar'; d
         echo "Build files matching expected $pattern exist."
     else
         echo "No files matching $pattern found."
-        exit 0
+        exit 1
     fi
 done

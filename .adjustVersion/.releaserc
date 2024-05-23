@@ -6,7 +6,8 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "perl -pi -e 's/^version=.*/version=${nextRelease.version}/' ../gradle.properties"
+        "prepareCmd": "perl -pi -e 's/^version=.*/version=${nextRelease.version}/' ../gradle.properties",
+        "publishCmd": "exit 1"
       }
     ]
   ]
