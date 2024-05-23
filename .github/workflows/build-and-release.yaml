@@ -24,13 +24,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Adjust Version in gradle.properties
+      - name: Adjust Version in gradle.properties (and do nothing else)
         uses: cycjimmy/semantic-release-action@v4
         with:
           working_directory: ./.adjustVersion
           extra_plugins: |
             @semantic-release/exec
-          args: --dry-run # ensures prepare-step and onwards are not executed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
