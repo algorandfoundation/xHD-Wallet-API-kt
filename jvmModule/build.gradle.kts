@@ -5,7 +5,7 @@
  * For more details on building Java & JVM projects, please refer to https://docs.gradle.org/8.5/userguide/building_java_projects.html in the Gradle documentation.
  */
 
-version = "0.1.0"
+version = project.property("version") as String
 group = "com.algorandfoundation.bip32ed25519"
 
 plugins {
@@ -65,7 +65,7 @@ tasks.register<Test>("testWithAlgorandSandbox") {
 }
 
 tasks.jar {
-    archiveFileName.set("Bip32Ed25519-JVM-$version.jar")
+    archiveFileName.set("Bip32Ed25519-JVM.jar")
 }
 
 task("copyJarToRoot", type = Copy::class) {

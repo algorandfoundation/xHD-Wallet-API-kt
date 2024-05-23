@@ -1,4 +1,4 @@
-version = "0.1.0"
+version = project.property('version')
 group = "com.algorandfoundation.bip32ed25519"
 
 apply plugin: 'com.android.library'
@@ -14,12 +14,12 @@ android {
     }
 
     defaultConfig {
-        archivesBaseName = "Bip32Ed25519-Android-" + version
+        archivesBaseName = "Bip32Ed25519-Android"
         namespace "com.algorandfoundation.bip32ed25519"
         minSdkVersion 26
         targetSdkVersion 33
         versionCode 16
-        versionName "0.1.0"
+        versionName version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }

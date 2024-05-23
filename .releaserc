@@ -1,17 +1,23 @@
 {
-    "branches": ["release/v*"],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      [
-        "@semantic-release/github",
-        {
-          "assets": [
-            { "path": "./build/Bip32Ed25519-JVM-*.jar", "label": "JVM Library" },
-            { "path": "./build/Bip32Ed25519-Android-*-release.aar", "label": "Android Library" }
-          ]
-        }
-      ],
-      "@semantic-release/git"
-    ]
+  "branches": ["release/v*"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          { "path": "./build/Bip32Ed25519-JVM.jar", "label": "JVM Library" },
+          { "path": "./build/Bip32Ed25519-Android-release.aar", "label": "Android Library" }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "perl -pi -e 's/^version=.*/version=${nextRelease.version}/' gradle.properties"
+      }
+    ],
+    "@semantic-release/git"
+  ]
 }

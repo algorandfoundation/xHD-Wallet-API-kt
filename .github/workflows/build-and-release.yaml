@@ -27,26 +27,11 @@ jobs:
       - name: Initialize submodule, generate jars, and build (including tests)
         run: chmod +x initialize.sh && ./initialize.sh
 
-      - name: Get version from androidModule
-        id: get_version_android
-        run: echo ::set-output name=VERSION_ANDROID::$(grep "versionName" androidModule/build.gradle | awk -F\" '{print $2}')
-
-      - name: Get version from jvmModule
-        id: get_version_jvm
-        run: echo ::set-output name=VERSION_JVM::$(grep "version =" jvmModule/build.gradle.kts | awk -F\" '{print $2}')
-
       - name: Get branch name
         id: get_branch
         run: echo ::set-output name=BRANCH_NAME::${GITHUB_REF#refs/heads/release/v}
 
-      - name: Check versions
-        run: |
-          if [ "${{ steps.get_version_android.outputs.VERSION_ANDROID }}" != "${{ steps.get_branch.outputs.BRANCH_NAME }}" ] || [ "${{ steps.get_version_jvm.outputs.VERSION_JVM }}" != "${{ steps.get_branch.outputs.BRANCH_NAME }}" ]; then
-            echo "Version mismatch. Make sure the versions in androidModule/build.gradle and jvmModule/build.gradle.kts match the branch name."
-            exit 1
-          fi
-
-      - name: Semantic Release
+      - name: Run Semantic Release and Update gradle.properties version
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
