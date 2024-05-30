@@ -10,6 +10,11 @@ enum class KeyContext(val value: Int) {
     Identity(1),
 }
 
+enum class BIP32DerivationType(val value: Int) {
+    Khovratovich(32),
+    Peikert(9),
+}
+
 enum class Encoding {
     // CBOR, // CBOR is not yet supported across all platforms
     MSGPACK,
