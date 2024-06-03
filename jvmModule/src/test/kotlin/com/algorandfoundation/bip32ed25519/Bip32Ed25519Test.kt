@@ -27,6 +27,7 @@ import com.goterl.lazysodium.utils.LibraryLoader
 import java.util.Base64
 import kotlin.collections.component1
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertNotEquals
 import net.pwall.json.schema.JSONSchema
 import org.junit.jupiter.api.BeforeAll
@@ -571,126 +572,85 @@ class Bip32Ed25519Test {
                 }
 
                 @Test
-                fun derivePubliclyPeikert() {
+                fun testBIP32DerivationTypeValues() {
+                        val derivationTypes = BIP32DerivationType.values().map { it.name }
+                        assertContains(derivationTypes, "Khovratovich")
+                        assertContains(derivationTypes, "Peikert")
+                }
+
+                @Test
+                fun derivePubliclyChildren() {
 
                         val rootKey =
                                         helperStringToByteArray(
                                                         "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
                                         )
+                        val account = 0u
+                        val change = 0u
                         val bip44Path =
                                         listOf(
                                                         Bip32Ed25519Base.harden(44u),
                                                         Bip32Ed25519Base.harden(283u),
-                                                        Bip32Ed25519Base.harden(0u),
-                                                        0u
+                                                        Bip32Ed25519Base.harden(account),
+                                                        0u,
                                         )
 
-                        val walletRoot =
-                                        c.deriveKey(
-                                                        rootKey,
-                                                        bip44Path,
-                                                        false,
-                                                        BIP32DerivationType.Peikert
-                                        )
+                        for (derivationType in BIP32DerivationType.values()) {
 
-                        // should be able to derive all public keys from this root without knowing
-                        // private information
-                        // since these are SOFTLY derived
-
-                        val numPublicKeysToDerive = 10
-                        for (i in 0 until numPublicKeysToDerive) {
-                                // assuming in a third party that only has public information
-                                // I'm provided with the wallet level m'/44'/283'/0'/0
-                                // root[public,chaincode]
-                                // no private information is shared
-                                // i can SOFTLY derive N public keys / addresses from this root
-                                val derivedKey =
-                                                c.deriveChildNodePublic(
-                                                                walletRoot,
-                                                                i.toUInt(),
-                                                                BIP32DerivationType.Peikert
-                                                )
-                                // Deriving from my own wallet where i DO have private information
-                                val myKey =
-                                                c.keyGen(
-                                                                KeyContext.Address,
-                                                                0u,
-                                                                0u,
-                                                                i.toUInt(),
-                                                                BIP32DerivationType.Peikert
+                                val walletRoot =
+                                                c.deriveKey(
+                                                                rootKey,
+                                                                bip44Path,
+                                                                false,
+                                                                derivationType
                                                 )
 
-                                // they should match
-                                // derivedKey.subarray(0, 32) ==  public key (excluding chaincode)
+                                // should be able to derive all public keys from this root without
+                                // knowing
+                                // private information
+                                // since these are SOFTLY derived
 
-                                assert(derivedKey.take(32).toByteArray().contentEquals(myKey))
+                                val numPublicKeysToDerive = 10
+                                for (i in 0 until numPublicKeysToDerive) {
+                                        // assuming in a third party that only has public
+                                        // information
+                                        // I'm provided with the wallet level m'/44'/283'/0'/0 root
+                                        // [public,
+                                        // chaincode]
+                                        // no private information is shared
+                                        // i can SOFTLY derive N public keys / addresses from this
+                                        // root
+                                        val derivedKeyKeyIndex =
+                                                        c.deriveChildNodePublic(
+                                                                        walletRoot,
+                                                                        i.toUInt(),
+                                                                        derivationType
+                                                        )
+                                        // Deriving from my own wallet where i DO have private
+                                        // information
+                                        val myKey =
+                                                        c.keyGen(
+                                                                        KeyContext.Address,
+                                                                        account,
+                                                                        change,
+                                                                        i.toUInt(),
+                                                                        derivationType
+                                                        )
+
+                                        // they should match
+                                        // derivedKey.subarray(0, 32) ==  public key (excluding
+                                        // chaincode)
+                                        assert(
+                                                        derivedKeyKeyIndex
+                                                                        .take(32)
+                                                                        .toByteArray()
+                                                                        .contentEquals(myKey)
+                                        ) {
+                                                "At index ${i} derivedKey and myKey are not equal for derivation type ${derivationType}"
+                                        }
+                                }
                         }
                 }
-                /*
-                       @Test
-                       fun derivePubliclyKhovratovich() {
-
-                               val rootKey =
-                                               helperStringToByteArray(
-                                                               "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
-                                               )
-                               val account = 0u
-                               val change = 0u
-                               val bip44Path =
-                                               listOf(
-                                                               Bip32Ed25519Base.harden(44u),
-                                                               Bip32Ed25519Base.harden(283u),
-                                                               Bip32Ed25519Base.harden(account),
-                                                               change
-                                               )
-
-                               val walletRoot =
-                                               c.deriveKey(
-                                                               rootKey,
-                                                               bip44Path,
-                                                               false,
-                                                               BIP32DerivationType.Khovratovich
-                                               )
-
-                               // should be able to derive all public keys from this root without knowing
-                               // private information
-                               // since these are SOFTLY derived
-
-                               val numPublicKeysToDerive = 10
-                               for (i in 0 until numPublicKeysToDerive) {
-                                       // assuming in a third party that only has public information
-                                       // I'm provided with the wallet level m'/44'/283'/0'/0 root [public,
-                                       // chaincode]
-                                       // no private information is shared
-                                       // i can SOFTLY derive N public keys / addresses from this root
-                                       val derivedKey =
-                                                       c.deriveChildNodePublic(
-                                                                       walletRoot,
-                                                                       i.toUInt(),
-                                                                       BIP32DerivationType.Khovratovich
-                                                       )
-                                       // Deriving from my own wallet where i DO have private information
-                                       val myKey =
-                                                       c.keyGen(
-                                                                       KeyContext.Address,
-                                                                       account,
-                                                                       change,
-                                                                       i.toUInt(),
-                                                                       BIP32DerivationType.Khovratovich
-                                                       )
-
-                                       // they should match
-                                       // derivedKey.subarray(0, 32) ==  public key (excluding chaincode)
-                                       println("derivedKey: ${derivedKey.contentToString()}")
-                                       println("myKey: ${myKey.contentToString()}")
-                                       println(derivedKey.take(32).toByteArray().contentEquals(myKey))
-                                       println("At index ${i}")
-                                       assert(derivedKey.take(32).toByteArray().contentEquals(myKey)) {
-                                               "At index ${i} derivedKey and myKey are not equal"
-                                       }
-                               }
-                       }
-                */
 
                 @Test
                 fun fromSeedBip39Test() {
@@ -737,13 +697,13 @@ class Bip32Ed25519Test {
                 fun validateNonceDataTest() {
                         val challenge =
                                         """
-                         {
-                                 "0": 28, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
-                                 "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-                                 "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-                                 "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-                                 "29": 143, "30": 123, "31": 27
-                         }""".trimIndent()
+                          {
+                                  "0": 28, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95,
+                                  "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                  "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                  "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                  "29": 143, "30": 123, "31": 27
+                          }""".trimIndent()
                         val authSchema =
                                         JSONSchema.parseFile("src/test/resources/auth.request.json")
 
@@ -756,13 +716,13 @@ class Bip32Ed25519Test {
                 fun validateNonceDataBase64Test() {
                         val challenge =
                                         """
-                         {
-                                 "0": 28, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
-                                 "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-                                 "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-                                 "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-                                 "29": 143, "30": 123, "31": 27
-                         }""".trimIndent()
+                          {
+                                  "0": 28, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                  "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                  "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                  "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                  "29": 143, "30": 123, "31": 27
+                          }""".trimIndent()
 
                         val authSchema =
                                         JSONSchema.parseFile("src/test/resources/auth.request.json")
@@ -814,13 +774,13 @@ class Bip32Ed25519Test {
                         // make one value larger than 255, the max according to the schema
                         val challenge =
                                         """
-                         {
-                                 "0": 256, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
-                                 "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-                                 "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-                                 "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-                                 "29": 143, "30": 123, "31": 27
-                         }""".trimIndent()
+                          {
+                                  "0": 256, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                  "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                  "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                  "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                  "29": 143, "30": 123, "31": 27
+                          }""".trimIndent()
 
                         val authSchema =
                                         JSONSchema.parseFile("src/test/resources/auth.request.json")
@@ -839,16 +799,16 @@ class Bip32Ed25519Test {
                         val message = """{"text":"Hello, World!"}"""
                         val jsonSchema =
                                         """
-                         {
-                                 "type": "object",
-                                 "properties": {
-                                         "text": {
-                                                 "type": "string"
-                                         }
-                                 },
-                                 "required": ["text"]
-                         }
-                         """.trimIndent()
+                          {
+                                  "type": "object",
+                                  "properties": {
+                                          "text": {
+                                                  "type": "string"
+                                          }
+                                  },
+                                  "required": ["text"]
+                          }
+                          """.trimIndent()
 
                         val msgSchema = JSONSchema.parse(jsonSchema)
 
@@ -874,16 +834,16 @@ class Bip32Ed25519Test {
                         val message = """{"sentence":"Hello, World!"}"""
                         val jsonSchema =
                                         """
-                         {
-                                 "type": "object",
-                                 "properties": {
-                                         "text": {
-                                                 "type": "string"
-                                         }
-                                 },
-                                 "required": ["text"]
-                         }
-                         """.trimIndent()
+                          {
+                                  "type": "object",
+                                  "properties": {
+                                          "text": {
+                                                  "type": "string"
+                                          }
+                                  },
+                                  "required": ["text"]
+                          }
+                          """.trimIndent()
 
                         val msgSchema = JSONSchema.parse(jsonSchema)
 
@@ -902,19 +862,19 @@ class Bip32Ed25519Test {
                         val message = """{"text":"Hello, World!"}"""
                         val jsonSchema =
                                         """
-                         {
-                                 "type": "object",
-                                 "properties": {
-                                         "text": {
-                                                 "type": "string"
-                                         },
-                                         "i": {
-                                                 "type": "integer"
-                                         }
-                                 },
-                                 "required": ["i"]
-                         }
-                         """.trimIndent()
+                          {
+                                  "type": "object",
+                                  "properties": {
+                                          "text": {
+                                                  "type": "string"
+                                          },
+                                          "i": {
+                                                  "type": "integer"
+                                          }
+                                  },
+                                  "required": ["i"]
+                          }
+                          """.trimIndent()
 
                         val msgSchema = JSONSchema.parse(jsonSchema)
 
@@ -934,20 +894,20 @@ class Bip32Ed25519Test {
                                         """{"text":"Hello World", "i": 10, "extra0": "test", "extra1": "test", "extra2": "test"}"""
                         val jsonSchema =
                                         """
-                         {
-                                 "type": "object",
-                                 "properties": {
-                                         "text": {
-                                                 "type": "string"
-                                         },
-                                         "i": {
-                                                 "type": "integer"
-                                         }
-                                 },
-                                 "required": ["text", "i"],
-                                 "additionalProperties": false
-                         }
-                         """.trimIndent()
+                          {
+                                  "type": "object",
+                                  "properties": {
+                                          "text": {
+                                                  "type": "string"
+                                          },
+                                          "i": {
+                                                  "type": "integer"
+                                          }
+                                  },
+                                  "required": ["text", "i"],
+                                  "additionalProperties": false
+                          }
+                          """.trimIndent()
 
                         val msgSchema = JSONSchema.parse(jsonSchema)
 
@@ -966,16 +926,16 @@ class Bip32Ed25519Test {
                         val message = helperHexStringToByteArray(msgPackData)
                         val jsonSchema =
                                         """
-                                         {
-                                                 "type": "object",
-                                                 "properties": {
-                                                         "text": {
-                                                                 "type": "string"
-                                                         }
-                                                 },
-                                                 "required": ["text"]
-                                         }
-                                         """.trimIndent()
+                                          {
+                                                  "type": "object",
+                                                  "properties": {
+                                                          "text": {
+                                                                  "type": "string"
+                                                          }
+                                                  },
+                                                  "required": ["text"]
+                                          }
+                                          """.trimIndent()
                         val msgSchema = JSONSchema.parse(jsonSchema)
                         val metadata = SignMetadata(Encoding.MSGPACK, msgSchema)
                         val valid = Bip32Ed25519Base.validateData(message, metadata)
@@ -989,16 +949,16 @@ class Bip32Ed25519Test {
                         val message = helperHexStringToByteArray(msgPackData)
                         val jsonSchema =
                                         """
-                                         {
-                                                 "type": "object",
-                                                 "properties": {
-                                                         "num": {
-                                                                 "type": "integer"
-                                                         }
-                                                 },
-                                                 "required": ["num"]
-                                         }
-                                         """.trimIndent()
+                                          {
+                                                  "type": "object",
+                                                  "properties": {
+                                                          "num": {
+                                                                  "type": "integer"
+                                                          }
+                                                  },
+                                                  "required": ["num"]
+                                          }
+                                          """.trimIndent()
                         val msgSchema = JSONSchema.parse(jsonSchema)
                         val metadata = SignMetadata(Encoding.MSGPACK, msgSchema)
                         val valid = Bip32Ed25519Base.validateData(message, metadata)
@@ -1013,16 +973,16 @@ class Bip32Ed25519Test {
                         val message = helperHexStringToByteArray(msgPackData)
                         val jsonSchema =
                                         """
-                                         {
-                                                 "type": "object",
-                                                 "properties": {
-                                                         "text": {
-                                                                 "type": "integer"
-                                                         }
-                                                 },
-                                                 "required": ["text"]
-                                         }
-                                         """.trimIndent()
+                                          {
+                                                  "type": "object",
+                                                  "properties": {
+                                                          "text": {
+                                                                  "type": "integer"
+                                                          }
+                                                  },
+                                                  "required": ["text"]
+                                          }
+                                          """.trimIndent()
                         val msgSchema = JSONSchema.parse(jsonSchema)
                         val metadata = SignMetadata(Encoding.MSGPACK, msgSchema)
                         val valid = Bip32Ed25519Base.validateData(message, metadata)
@@ -1083,16 +1043,16 @@ class Bip32Ed25519Test {
                         val message = """{"text":"Hello, World!"}""".toByteArray()
                         val jsonSchema =
                                         """
-                                         {
-                                                 "type": "object",
-                                                 "properties": {
-                                                         "text": {
-                                                                 "type": "string"
-                                                         }
-                                                 },
-                                                 "required": ["text"]
-                                         }
-                                         """.trimIndent()
+                                          {
+                                                  "type": "object",
+                                                  "properties": {
+                                                          "text": {
+                                                                  "type": "string"
+                                                          }
+                                                  },
+                                                  "required": ["text"]
+                                          }
+                                          """.trimIndent()
                         val metadata = SignMetadata(Encoding.NONE, JSONSchema.parse(jsonSchema))
                         val valid = Bip32Ed25519Base.validateData(message, metadata)
                         assert(valid) { "validation failed, message not in line with schema" }
@@ -1187,13 +1147,13 @@ class Bip32Ed25519Test {
 
                         val data =
                                         """
-                         {
-                                 "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
-                                 "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-                                 "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-                                 "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-                                 "29": 143, "30": 123, "31": 27
-                         }"""
+                          {
+                                  "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                  "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                  "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                  "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                  "29": 143, "30": 123, "31": 27
+                          }"""
                                                         .trimIndent()
                                                         .toByteArray()
 
@@ -1243,13 +1203,13 @@ class Bip32Ed25519Test {
 
                         val dataRaw =
                                         """
-                         {
-                                 "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
-                                 "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-                                 "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-                                 "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-                                 "29": 143, "30": 123, "31": 27
-                         }"""
+                          {
+                                  "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                  "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                  "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                  "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                  "29": 143, "30": 123, "31": 27
+                          }"""
                                                         .trimIndent()
                                                         .toByteArray()
 
@@ -1300,13 +1260,13 @@ class Bip32Ed25519Test {
 
                         val dataRaw =
                                         """
-                         {
-                                 "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
-                                 "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-                                 "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-                                 "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-                                 "29": 143, "30": 123, "31": 27
-                         }"""
+                          {
+                                  "0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95, 
+                                  "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+                                  "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+                                  "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+                                  "29": 143, "30": 123, "31": 27
+                          }"""
                                                         .trimIndent()
                                                         .toByteArray()
 
@@ -1484,16 +1444,16 @@ class Bip32Ed25519Test {
                         val message = """{"text":"Hello, World!"}""".toByteArray()
                         val jsonSchema =
                                         """
-                                         {
-                                                 "type": "object",
-                                                 "properties": {
-                                                         "text": {
-                                                                 "type": "string"
-                                                         }
-                                                 },
-                                                 "required": ["text"]
-                                         }
-                                         """.trimIndent()
+                                          {
+                                                  "type": "object",
+                                                  "properties": {
+                                                          "text": {
+                                                                  "type": "string"
+                                                          }
+                                                  },
+                                                  "required": ["text"]
+                                          }
+                                          """.trimIndent()
                         val metadata = SignMetadata(Encoding.NONE, JSONSchema.parse(jsonSchema))
 
                         val pk =

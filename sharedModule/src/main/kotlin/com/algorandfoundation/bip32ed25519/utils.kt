@@ -11,8 +11,8 @@ enum class KeyContext(val value: Int) {
 }
 
 enum class BIP32DerivationType(val value: Int) {
-    Khovratovich(32),
     Peikert(9),
+    Khovratovich(32)
 }
 
 enum class Encoding {
