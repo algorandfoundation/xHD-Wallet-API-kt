@@ -10,7 +10,7 @@ enum class KeyContext(val value: Int) {
     Identity(1),
 }
 
-enum class BIP32DerivationType(val value: Int) {
+enum class Bip32DerivationType(val value: Int) {
     Peikert(9),
     Khovratovich(32)
 }

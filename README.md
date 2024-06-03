@@ -205,6 +205,56 @@ while (!done) {
 println("Transaction ID: ${post.body()?.txId}")
 ```
 
+### Deriving Child Public Keys
+
+You can also utilize `deriveKey` to derive extended public keys by setting `isPrivate: false`, thus allowing `deriveChildNodePublic` to softly derive `N` descendant public keys / addresses using a single extended key / root. A typical use case is for producing one-time addresses, either to calculate for yourself in an insecure environment, or to calculate someone else's one time addresses.
+
+> [!IMPORTANT]
+> We distinguish between our 32 byte public key (pk) and the 64 byte extended public key (xpk) where xpk is used to derive child nodes in `deriveChildNodePublic` and `deriveChildNodePrivate`. The xpk is a concatenation of the pk and the 32 byte chaincode which serves as a key for the HMAC functions.
+>
+> **xpk should be kept secret** unless you want to allow someone else to derive descendant keys.
+
+Child public key derivation is relevant at the unhardened levels, e.g. in BIP44 get it at the Account level and then derive publicly for Change and keyIndex. Alternatively get it at the Change-level and only derive for keyIndex.
+
+The following example uses the Bip39 library.
+
+```kotlin
+val seed = MnemonicCode(
+            "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
+val bip44Path =
+                listOf(
+                                Bip32Ed25519Base.harden(44u),
+                                Bip32Ed25519Base.harden(283u),
+                                Bip32Ed25519Base.harden(0u),
+                                0u,
+                ) // Path to Change = 0
+
+val walletRoot =
+                c.deriveKey(
+                                Bip32Ed25519Base.fromSeed(
+                                                seed.toSeed()
+                                ),
+                                bip44Path,
+                                false,
+                )
+```
+
+The output of `deriveKey` is an xpk at the Change-level (`m / 44' / 283' / 0' / 0`) which can be shared. A counter party can then do the following,
+
+```kotlin
+val derivedKey = c.deriveChildNodePublic(walletRoot, 0u)
+```
+
+and derive the descendant child pk/address at the keyIndex specified, in this case 0. Up to 2^31 are allowed, i.e. ~2 billion.
+
+## Derivation Types
+
+This library supports two derivation types, called `Khovratovic` and `Peikert`. The default option is the `Peikert`option, but `Khovratovich` is supported to allow for interoperability with other Ed25519 HD wallet libraries implementing `BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace` by Dmitry Khovratovich and Jason Law.
+
+The difference lies in how many bits of randomization are performed when deriving a new child key. `Khovratovic` keeps 32 bits (4 bytes) and randomizes `256-32=224`bits. `Peikert` on the other hand keeps 9 bits and randomizes `256-9 = 254` bits at each level. The `Peikert` derivation type is thus more secure, but only allows for 8 safe levels of derivation, whereas the `Khovratovic` allows for 2^26.
+
+In practice however, common standards like the BIP44 only have 5 levels of derivation, rendering the millions of additional levels useless. Note that the 3 last levels, Account, Change and keyIndex, allow for many billions of possible addresses - allow from a single seed.
+
 ## Running tests
 
 This Kotlin project uses Gradle.

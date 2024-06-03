@@ -28,6 +28,7 @@ import java.util.Base64
 import kotlin.collections.component1
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import net.pwall.json.schema.JSONSchema
 import org.junit.jupiter.api.BeforeAll
@@ -239,7 +240,7 @@ class Bip32Ed25519Test {
                                         c.deriveChildNodePrivate(
                                                         extendedKey,
                                                         index,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(output.contentEquals(expectedOutput)) {
                                 "produced deriveChildNodePrivate output and expectedOutput are not equal"
@@ -260,12 +261,54 @@ class Bip32Ed25519Test {
                                         c.deriveChildNodePrivate(
                                                         extendedKey2,
                                                         index2,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(output2.contentEquals(expectedOutput2)) {
                                 "produced deriveChildNodePrivate output and expectedOutput are not equal"
                         }
                         assert(output2.size == 96) { "output size is not 96" }
+                }
+
+                @Test
+                fun deriveChildNodePublicTest() {
+                        val rootKey =
+                                        helperStringToByteArray(
+                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                        )
+                        assertFailsWith<IllegalArgumentException> {
+                                c.deriveChildNodePublic(rootKey, 0x80000000u + 1u)
+                        }
+
+                        val outputK =
+                                        c.deriveChildNodePublic(
+                                                        rootKey,
+                                                        0u,
+                                                        Bip32DerivationType.Khovratovich
+                                        )
+                        val outputP =
+                                        c.deriveChildNodePublic(
+                                                        rootKey,
+                                                        0u,
+                                                        Bip32DerivationType.Peikert
+                                        )
+
+                        val expectedOutputK =
+                                        helperStringToByteArray(
+                                                        "232,253,117,154,162,214,72,13,236,72,194,215,86,59,113,220,89,195,216,78,44,215,134,97,43,8,49,134,35,231,20,84,49,32,65,13,221,149,119,249,12,249,116,76,33,24,47,53,202,31,152,55,73,219,17,12,115,107,71,146,73,154,38,189"
+                                        )
+
+                        val expectedOutputP =
+                                        helperStringToByteArray(
+                                                        "40,78,238,81,249,143,15,227,159,244,52,118,22,56,198,217,204,72,201,194,5,206,230,18,87,247,48,18,35,141,0,35,49,32,65,13,221,149,119,249,12,249,116,76,33,24,47,53,202,31,152,55,73,219,17,12,115,107,71,146,73,154,38,189"
+                                        )
+
+                        assert(outputK.contentEquals(expectedOutputK)) {
+                                "produced deriveChildNodePublic output and expectedOutput are not equal"
+                        }
+
+                        assert(outputP.contentEquals(expectedOutputP)) {
+                                "produced deriveChildNodePublic output and expectedOutput are not equal"
+                        }
                 }
 
                 @Test
@@ -286,7 +329,7 @@ class Bip32Ed25519Test {
                                                         rootKey,
                                                         bip44Path,
                                                         isPrivate,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         assert(outputPublic.contentEquals(expectedResultPublic)) {
@@ -303,7 +346,7 @@ class Bip32Ed25519Test {
                                                         rootKey,
                                                         bip44Path,
                                                         isPrivate,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(outputPrivate.contentEquals(expectedResultPrivate)) {
                                 "produced deriveKey output (private key) and expected output are not equal"
@@ -323,7 +366,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -343,7 +386,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -363,7 +406,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         2u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -383,7 +426,7 @@ class Bip32Ed25519Test {
                                                         1u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -403,7 +446,7 @@ class Bip32Ed25519Test {
                                                         1u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -423,7 +466,7 @@ class Bip32Ed25519Test {
                                                         2u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -443,7 +486,7 @@ class Bip32Ed25519Test {
                                                         3u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -463,7 +506,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -483,7 +526,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -504,7 +547,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         2u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -524,7 +567,7 @@ class Bip32Ed25519Test {
                                                         1u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -544,7 +587,7 @@ class Bip32Ed25519Test {
                                                         1u,
                                                         0u,
                                                         2u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -564,7 +607,7 @@ class Bip32Ed25519Test {
                                                         2u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(derivedPublicKey.contentEquals(expectedKeyOutput)) {
                                 "derivedPublicKey and expectedKeyOutput are not equal"
@@ -572,19 +615,19 @@ class Bip32Ed25519Test {
                 }
 
                 @Test
-                fun testBIP32DerivationTypeValues() {
-                        val derivationTypes = BIP32DerivationType.values().map { it.name }
+                fun testBip32DerivationTypeValues() {
+                        val derivationTypes = Bip32DerivationType.values().map { it.name }
                         assertContains(derivationTypes, "Khovratovich")
                         assertContains(derivationTypes, "Peikert")
                 }
 
                 @Test
                 fun derivePubliclyChildren() {
-
-                        val rootKey =
-                                        helperStringToByteArray(
-                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                        val seed =
+                                        MnemonicCode(
+                                                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                         )
+
                         val account = 0u
                         val change = 0u
                         val bip44Path =
@@ -595,11 +638,13 @@ class Bip32Ed25519Test {
                                                         0u,
                                         )
 
-                        for (derivationType in BIP32DerivationType.values()) {
+                        for (derivationType in Bip32DerivationType.values()) {
 
                                 val walletRoot =
                                                 c.deriveKey(
-                                                                rootKey,
+                                                                Bip32Ed25519Base.fromSeed(
+                                                                                seed.toSeed()
+                                                                ),
                                                                 bip44Path,
                                                                 false,
                                                                 derivationType
@@ -1098,7 +1143,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val msgSchema = JSONSchema.parseFile("src/test/resources/msg.schema.json")
@@ -1112,7 +1157,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         data,
                                                         metadata,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         assert(
@@ -1134,7 +1179,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(!c.verifyWithPublicKey(signature, data, pk2)) {
                                 "signature is unexpectedly valid"
@@ -1163,7 +1208,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val authSchema =
@@ -1178,7 +1223,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         data,
                                                         metadata,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val isValid = c.verifyWithPublicKey(signature, data, pk)
@@ -1190,7 +1235,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(!c.verifyWithPublicKey(signature, data, pk2)) {
                                 "signature is unexpectedly valid"
@@ -1220,7 +1265,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val authSchema =
@@ -1235,7 +1280,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         data,
                                                         metadata,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val isValid = c.verifyWithPublicKey(signature, data, pk)
@@ -1247,7 +1292,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(!c.verifyWithPublicKey(signature, data, pk2)) {
                                 "signature is unexpectedly valid"
@@ -1285,7 +1330,7 @@ class Bip32Ed25519Test {
                                                 0u,
                                                 data,
                                                 metadata,
-                                                BIP32DerivationType.Khovratovich
+                                                Bip32DerivationType.Khovratovich
                                 )
                                 // If we get past this line, the test failed
                                 throw (IllegalArgumentException(
@@ -1311,7 +1356,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val authSchema =
@@ -1326,7 +1371,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         data,
                                                         metadata,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val isValid = c.verifyWithPublicKey(signature, data, pk)
@@ -1338,7 +1383,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(!c.verifyWithPublicKey(signature, data, pk2)) {
                                 "signature is unexpectedly valid"
@@ -1366,7 +1411,7 @@ class Bip32Ed25519Test {
                                                 0u,
                                                 data,
                                                 metadata,
-                                                BIP32DerivationType.Khovratovich
+                                                Bip32DerivationType.Khovratovich
                                 )
                                 // If we get past this line, the test failed
                                 throw (IllegalArgumentException(
@@ -1389,7 +1434,7 @@ class Bip32Ed25519Test {
 
                 //         val data = helperHexStringToByteArray(CBORData)
                 //         val pk = c.keyGen(KeyContext.Address, 0u, 0u, 0u,
-                // BIP32DerivationType.Khovratovich)
+                // Bip32DerivationType.Khovratovich)
 
                 //         val authSchema =
                 //
@@ -1397,13 +1442,13 @@ class Bip32Ed25519Test {
                 //         val metadata = SignMetadata(Encoding.CBOR, authSchema)
 
                 //         val signature = c.signData(KeyContext.Address, 0u, 0u, 0u, data,
-                // metadata, BIP32DerivationType.Khovratovich)
+                // metadata, Bip32DerivationType.Khovratovich)
 
                 //         val isValid = c.verifyWithPublicKey(signature, data, pk)
                 //         assert(isValid) { "signature is not valid" }
 
                 //         val pk2 = c.keyGen(KeyContext.Address, 0u, 0u, 1u,
-                // BIP32DerivationType.Khovratovich)
+                // Bip32DerivationType.Khovratovich)
                 //         assert(!c.verifyWithPublicKey(signature, data, pk2)) {
                 //                 "signature is unexpectedly valid"
                 //         }
@@ -1426,7 +1471,7 @@ class Bip32Ed25519Test {
 
                 //         try {
                 //                 c.signData(KeyContext.Address, 0u, 0u, 0u, data, metadata,
-                // BIP32DerivationType.Khovratovich)
+                // Bip32DerivationType.Khovratovich)
                 //                 // If we get past this line, the test failed
                 //                 throw (IllegalArgumentException(
                 //                                 "signData func did not throw DataValidationExcept
@@ -1462,7 +1507,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val signature =
@@ -1473,7 +1518,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         message,
                                                         metadata,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val isValid = c.verifyWithPublicKey(signature, message, pk)
@@ -1485,7 +1530,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         1u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         assert(!c.verifyWithPublicKey(signature, message, pk2)) {
                                 "signature is unexpectedly valid"
@@ -1500,7 +1545,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         prefix.toByteArray() + message,
                                                         metadata,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                                         assert(false) {
                                                 "Illegal prepend unexpectedly did not throw error!"
@@ -1519,7 +1564,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         // this transaction wes successfully submitted to the network
                         // https://testnet.explorer.perawallet.app/tx/UJG3NVCSCW5A63KPV35BPAABLXMXTTEM2CVUKNS4EML3H3EYGMCQ/
@@ -1536,7 +1581,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         prefixEncodedTx,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         assert(
@@ -1580,7 +1625,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         val bobKey =
                                         bob.keyGen(
@@ -1588,7 +1633,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val aliceSharedSecret =
@@ -1599,7 +1644,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         bobKey,
                                                         true,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         val bobSharedSecret =
                                         bob.ECDH(
@@ -1609,7 +1654,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         aliceKey,
                                                         false,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         assertNotEquals(
@@ -1639,7 +1684,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         bobKey,
                                                         false,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val bobSharedSecret2 =
@@ -1650,7 +1695,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         aliceKey,
                                                         true,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         assertNotEquals(
@@ -1687,7 +1732,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
                         val bobKey =
                                         bob.keyGen(
@@ -1695,7 +1740,7 @@ class Bip32Ed25519Test {
                                                         0u,
                                                         0u,
                                                         0u,
-                                                        BIP32DerivationType.Khovratovich
+                                                        Bip32DerivationType.Khovratovich
                                         )
 
                         val aliceSharedSecret =
@@ -1707,7 +1752,7 @@ class Bip32Ed25519Test {
                                                                         0u,
                                                                         bobKey,
                                                                         true,
-                                                                        BIP32DerivationType
+                                                                        Bip32DerivationType
                                                                                         .Khovratovich
                                                         )
                                         )
@@ -1720,7 +1765,7 @@ class Bip32Ed25519Test {
                                                                         0u,
                                                                         aliceKey,
                                                                         false,
-                                                                        BIP32DerivationType
+                                                                        Bip32DerivationType
                                                                                         .Khovratovich
                                                         )
                                         )

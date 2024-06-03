@@ -343,7 +343,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
         public fun deriveChildNodePrivate(
                         extendedKey: ByteArray,
                         index: UInt,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
                 val kl = extendedKey.sliceArray(0 until ED25519_SCALAR_SIZE)
                 val kr = extendedKey.sliceArray(ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE)
@@ -432,24 +432,20 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
         public fun deriveChildNodePublic(
                         extendedKey: ByteArray,
                         index: UInt,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
                 if (index > 0x80000000u)
                                 throw IllegalArgumentException(
                                                 "Cannot derive public key with hardened index"
                                 )
 
-                println("derivationType: $derivationType")
-                println("Extended Key: ${extendedKey.contentToString()}")
-                println("Index: $index")
                 val pk = extendedKey.sliceArray(0 until ED25519_POINT_SIZE)
                 val cc =
                                 extendedKey.sliceArray(
                                                 ED25519_POINT_SIZE until
                                                                 ED25519_POINT_SIZE + CHAIN_CODE_SIZE
                                 )
-                println("Public Key: ${pk.contentToString()}")
-                println("Chain Code: ${cc.contentToString()}")
+
                 // Step 1: Compute Z
                 val data = ByteBuffer.allocate(1 + ED25519_SCALAR_SIZE + 4)
                 data.put(1 + ED25519_SCALAR_SIZE, index.toByte())
@@ -466,8 +462,6 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                                                 z.sliceArray(0 until ED25519_SCALAR_SIZE),
                                                 derivationType.value
                                 )
-                println("Z: ${z.contentToString()}")
-                println("ZL: ${zl.contentToString()}")
 
                 // Step 2: Compute child PK
 
@@ -495,10 +489,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                                                                         )
                                                 } // Pad to 32 bytes
 
-                println("Left: ${left.contentToString()}")
-
                 val p = lazySodium.cryptoScalarMultEd25519BaseNoclamp(left).toBytes()
-                println("p: ${p.contentToString()}")
 
                 // Step 3: Compute child chain code
                 data.put(0, 0x03)
@@ -508,11 +499,9 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                                 fullChildChainCode.sliceArray(
                                                 CHAIN_CODE_SIZE until 2 * CHAIN_CODE_SIZE
                                 )
-                println("Child Chain Code: ${childChainCode.contentToString()}")
 
                 val newPK = ByteArray(32)
                 lazySodium.cryptoCoreEd25519Add(newPK, p, pk)
-                println("New PK=p+pk: ${newPK.contentToString()}")
 
                 return ByteBuffer.allocate(ED25519_POINT_SIZE + CHAIN_CODE_SIZE)
                                 .put(newPK)
@@ -563,7 +552,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                         rootKey: ByteArray,
                         bip44Path: List<UInt>,
                         isPrivate: Boolean,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
                 var derived = rootKey
                 for (path in bip44Path) {
@@ -602,7 +591,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                         account: UInt,
                         change: UInt,
                         keyIndex: UInt,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
                 val rootKey: ByteArray = fromSeed(this.seed)
                 val bip44Path: List<UInt> =
@@ -635,7 +624,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                         keyIndex: UInt,
                         data: ByteArray,
                         metadata: SignMetadata,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
 
                 val valid = validateData(data, metadata)
@@ -672,7 +661,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                         change: UInt,
                         keyIndex: UInt,
                         prefixEncodedTx: ByteArray,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
                 return rawSign(
                                 getBIP44PathFromContext(context, account, change, keyIndex),
@@ -699,7 +688,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
         fun rawSign(
                         bip44Path: List<UInt>,
                         data: ByteArray,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
 
                 val rootKey: ByteArray = fromSeed(this.seed)
@@ -822,7 +811,7 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
                         keyIndex: UInt,
                         otherPartyPub: ByteArray,
                         meFirst: Boolean,
-                        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert
+                        derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
         ): ByteArray {
 
                 val rootKey: ByteArray = fromSeed(this.seed)
