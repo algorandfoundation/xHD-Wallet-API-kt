@@ -50,15 +50,15 @@ Below we refer to Bip32Ed25519JVM but the same examples work for Bip32Ed25519And
 Initialize an instance of Bip32Ed25519JVM with seed bytes:
 
 ```kotlin
-    val alice = Bip32Ed25519JVM(seedBytes)
+val alice = Bip32Ed25519JVM(seedBytes)
 ```
 
 Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39` to use a seed phrase instead:
 
 ```kotlin
-    val seed = MnemonicCode(
-                "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
-    val alice = Bip32Ed25519JVM(seed.toSeed())
+val seed = MnemonicCode(
+  "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
+val alice = Bip32Ed25519JVM(seed.toSeed())
 ```
 
 Obviously do NOT make use of that seed phrase!
@@ -84,7 +84,7 @@ In Algorand however, there is an opportunity to assign change values to specific
 Consider the derivation path `m'/44'/283'/0'/0/0`. This corresponds to:
 
 ```kotlin
-    val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
 ```
 
 This returns the public key.
@@ -94,24 +94,22 @@ This returns the public key.
 The user might wish to sign a 32 byte nonce:
 
 ```kotlin
+val nonce = """
+  {"0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95,
+    "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+    "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+    "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+  "29": 143, "30": 123, "31": 27}""" .trimIndent().toByteArray()
 
-    val nonce = """
-        {"0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95,
-         "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-         "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-         "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-        "29": 143, "30": 123, "31": 27}""" .trimIndent().toByteArray()
+val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
 
-    val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val authSchema = JSONSchema.parseFile("src/test/resources/auth.request.json")
 
-    val authSchema =
-                    JSONSchema.parseFile("src/test/resources/auth.request.json")
+val metadata = SignMetadata(Encoding.NONE, authSchema)
 
-    val metadata = SignMetadata(Encoding.NONE, authSchema)
+val signature = alice.signData(KeyContext.Address, 0u, 0u, 0u, nonce, metadata)
 
-    val signature = alice.signData(KeyContext.Address, 0u, 0u, 0u, nonce, metadata)
-
-    assert(alice.verifyWithPublicKey(signature, nonce, pk))
+assert(alice.verifyWithPublicKey(signature, nonce, pk))
 ```
 
 ### ECDH
@@ -121,15 +119,15 @@ The user might also wish to generate a shared secret with someone else:
 Alice's PoV:
 
 ```kotlin
-    val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
-    val sharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, 0u, bobKey, true)
+val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val sharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, 0u, bobKey, true)
 ```
 
 Bob's PoV:
 
 ```kotlin
-    val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u, 0u)
-    val sharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, false)
+val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val sharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, false)
 ```
 
 Underneath the hood the Ed25519 PKs are turned into Curve25519 format.
@@ -154,23 +152,22 @@ Assume that it gets funded by someone. Alice can then start signing her own tran
 // Let's have Alice send a tx!
 
 // Construct the TX:
-val tx =
-        Transaction.PaymentTransactionBuilder()
-                .lookupParams(algod) // lookup fee, firstValid, lastValid
-                .sender(aliceAddress)
-                .receiver(receiver)
-                .amount(algoAmount)
-                .noteUTF8("Keep the change!")
-                .build()
+val tx = Transaction.PaymentTransactionBuilder()
+  .lookupParams(algod) // lookup fee, firstValid, lastValid
+  .sender(aliceAddress)
+  .receiver(receiver)
+  .amount(algoAmount)
+  .noteUTF8("Keep the change!")
+  .build()
 
 // Sign the TX with this library:
 val sig = alice.signAlgoTransaction(
-                            KeyContext.Address,
-                            0u,
-                            0u,
-                            0u,
-                            tx.bytesToSign()
-                    )
+    KeyContext.Address,
+    0u,
+    0u,
+    0u,
+    tx.bytesToSign()
+)
 
 // Turn the sig into Algorand SDK's Signature type
 val txSig = Signature(sig)
@@ -193,13 +190,13 @@ if (!post.isSuccessful) { // Check if there was an issue
 // We wait for confirmation:
 var done = false
 while (!done) {
-    val txInfo = algod.PendingTransactionInformation(post.body()?.txId).execute()
-    if (!txInfo.isSuccessful) {
-        throw RuntimeException("Failed to check on tx progress")
-    }
-    if (txInfo.body()?.confirmedRound != null) {
-        done = true
-    }
+  val txInfo = algod.PendingTransactionInformation(post.body()?.txId).execute()
+  if (!txInfo.isSuccessful) {
+      throw RuntimeException("Failed to check on tx progress")
+  }
+  if (txInfo.body()?.confirmedRound != null) {
+      done = true
+  }
 }
 
 println("Transaction ID: ${post.body()?.txId}")
@@ -222,21 +219,19 @@ The following example uses the Bip39 library.
 val seed = MnemonicCode(
             "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
 val bip44Path =
-                listOf(
-                                Bip32Ed25519Base.harden(44u),
-                                Bip32Ed25519Base.harden(283u),
-                                Bip32Ed25519Base.harden(0u),
-                                0u,
-                ) // Path to Change = 0
+  listOf(
+    Bip32Ed25519Base.harden(44u),
+    Bip32Ed25519Base.harden(283u),
+    Bip32Ed25519Base.harden(0u),
+    0u,
+  ) // Path to Change = 0
 
 val walletRoot =
-                c.deriveKey(
-                                Bip32Ed25519Base.fromSeed(
-                                                seed.toSeed()
-                                ),
-                                bip44Path,
-                                false,
-                )
+  c.deriveKey(
+    Bip32Ed25519Base.fromSeed(seed.toSeed()),
+    bip44Path,
+    false,
+  )
 ```
 
 The output of `deriveKey` is an xpk at the Change-level (`m / 44' / 283' / 0' / 0`) which can be shared. A counter party can then do the following,
@@ -300,7 +295,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-```
-
-```
