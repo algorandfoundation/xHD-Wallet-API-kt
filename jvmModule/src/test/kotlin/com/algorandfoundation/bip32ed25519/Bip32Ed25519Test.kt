@@ -616,8 +616,6 @@ class Bip32Ed25519Test {
 
                 @Test
                 fun fromSeedBip39Test() {
-
-                        //////////
                         val seed =
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
