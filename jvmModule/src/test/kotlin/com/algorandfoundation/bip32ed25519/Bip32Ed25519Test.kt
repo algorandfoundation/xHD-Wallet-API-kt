@@ -615,6 +615,38 @@ class Bip32Ed25519Test {
                 }
 
                 @Test
+                fun fromSeedBip39Test() {
+
+                        //////////
+                        val seed =
+                                        MnemonicCode(
+                                                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
+                                        )
+
+                        assert(seed.toSeed().size == 64) { "seed size is not 64" }
+                        assert(
+                                        seed.toSeed()
+                                                        .contentEquals(
+                                                                        helperStringToByteArray(
+                                                                                        "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
+                                                                        )
+                                                        )
+                        ) { "seed mnemonic did not give expected bip39 seed" }
+
+                        val rootKey = Bip32Ed25519Base.fromSeed(seed.toSeed())
+                        val fromSeedExpectedOutput =
+                                        helperStringToByteArray(
+                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
+                                        )
+
+                        assert(rootKey.contentEquals(fromSeedExpectedOutput)) {
+                                "rootKey and fromSeedExpectedOutput are not equal"
+                        }
+
+                        assert(rootKey.size == 96) { "rootKey size is not 96" }
+                }
+
+                @Test
                 fun testBip32DerivationTypeValues() {
                         val derivationTypes = Bip32DerivationType.values().map { it.name }
                         assertContains(derivationTypes, "Khovratovich")
@@ -695,38 +727,6 @@ class Bip32Ed25519Test {
                                         }
                                 }
                         }
-                }
-
-                @Test
-                fun fromSeedBip39Test() {
-
-                        //////////
-                        val seed =
-                                        MnemonicCode(
-                                                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
-                                        )
-
-                        assert(seed.toSeed().size == 64) { "seed size is not 64" }
-                        assert(
-                                        seed.toSeed()
-                                                        .contentEquals(
-                                                                        helperStringToByteArray(
-                                                                                        "58,255,45,180,22,184,149,236,60,249,164,248,209,233,112,188,152,25,146,14,123,244,74,94,53,4,119,175,14,245,87,177,81,27,9,134,222,191,120,221,56,199,197,32,205,68,255,124,114,49,97,143,149,142,33,239,2,80,115,58,140,25,21,234"
-                                                                        )
-                                                        )
-                        ) { "seed mnemonic did not give expected bip39 seed" }
-
-                        val rootKey = Bip32Ed25519Base.fromSeed(seed.toSeed())
-                        val fromSeedExpectedOutput =
-                                        helperStringToByteArray(
-                                                        "168,186,128,2,137,34,217,252,250,5,92,120,174,222,85,181,197,117,188,216,213,165,49,104,237,244,95,54,217,236,143,70,148,89,43,75,200,146,144,117,131,226,38,105,236,223,27,4,9,169,243,189,85,73,242,221,117,27,81,54,9,9,205,5,121,107,146,6,236,48,225,66,233,75,121,10,152,128,91,249,153,4,43,85,4,105,99,23,78,230,206,226,208,55,89,70"
-                                        )
-
-                        assert(rootKey.contentEquals(fromSeedExpectedOutput)) {
-                                "rootKey and fromSeedExpectedOutput are not equal"
-                        }
-
-                        assert(rootKey.size == 96) { "rootKey size is not 96" }
                 }
         }
 
