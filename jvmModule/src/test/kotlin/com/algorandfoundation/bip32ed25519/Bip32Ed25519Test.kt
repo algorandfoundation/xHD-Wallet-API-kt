@@ -645,14 +645,14 @@ class Bip32Ed25519Test {
                 }
 
                 @Test
-                fun testBip32DerivationTypeValues() {
+                fun testBip32DerivationTypeValuesTest() {
                         val derivationTypes = Bip32DerivationType.values().map { it.name }
                         assertContains(derivationTypes, "Khovratovich")
                         assertContains(derivationTypes, "Peikert")
                 }
 
                 @Test
-                fun derivePubliclyChildren() {
+                fun derivePubliclyChildrenTest() {
                         val seed =
                                         MnemonicCode(
                                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
