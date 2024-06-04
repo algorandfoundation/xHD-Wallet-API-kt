@@ -603,13 +603,7 @@ class Bip32Ed25519Test {
           }
 
       // Initialize the root key
-      val extendedKey =
-          Bip32Ed25519Base.fromSeed(
-              MnemonicCode(
-                      "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
-                  )
-                  .toSeed()
-          )
+      val extendedKey = Bip32Ed25519Base.fromSeed(seed.toSeed())
 
       // set all kL bits to 1
       for (i in 0 until 32) {
