@@ -58,6 +58,14 @@ tasks.named<Test>("test") {
     testLogging.showStandardStreams = true
 }
 
+tasks.register<Test>("testWithKhovratovichSafetyDepth") {
+    useJUnitPlatform{
+        excludeTags("sandbox")
+    }
+    systemProperty("khovratovichSafetyTest", "true")
+    testLogging.showStandardStreams = true
+}
+
 // Run ./gradlew testWithAlgorandSandbox to run tests that interact with an Algorand Sandbox network (e.g. Algokit Localnet)
 tasks.register<Test>("testWithAlgorandSandbox") {
     useJUnitPlatform()
