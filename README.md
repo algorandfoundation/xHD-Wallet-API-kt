@@ -277,6 +277,14 @@ Using algokit, run the following each time to reset account balances:
 algokit localnet reset && ./gradlew testWithAlgorandSandbox
 ```
 
+As part of the normal test suite we test whether the assumption that we can have a max of 8 levels of security is correct or not for the Peikert derivation type. The same can be done for Khovratovic. However, as that would require `./gradlew test` to take an additional ~30 secs, it is required to run the following:
+
+```bash
+./gradlew testWithKhovratovichSafetyDepth
+```
+
+It will run the same as `./gradle test` (no Sandbox tests) but with the additional check for the Khovratovich derivation type safety depth.
+
 ## License
 
 Copyright 2024 Algorand Foundation
