@@ -332,11 +332,14 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
     // However, left is NOT specified to be taken mod 2^256
 
     val left =
-        (BigInteger(1, kl.reversedArray()) +
-                BigInteger(
-                    1,
-                    trunc256MinusGBits(zl.clone(), derivationType.value).reversedArray()
-                ) * BigInteger.valueOf(8L))
+        (BigInteger(1, kl.reversedArray())
+                .plus(
+                    BigInteger(
+                            1,
+                            trunc256MinusGBits(zl.clone(), derivationType.value).reversedArray()
+                        )
+                        .multiply(BigInteger.valueOf(8L))
+                ))
             .toByteArray()
             .reversedArray()
             .let { bytes ->

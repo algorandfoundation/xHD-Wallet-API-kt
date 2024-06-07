@@ -669,6 +669,36 @@ class Bip32Ed25519Test {
         }
       }
     }
+
+    @Test
+    fun deriveMaxLevelsForKnownSeedTest() {
+      // Tests the maximum number of levels of derivation for a seed whose max levels we know
+      val seed =
+          MnemonicCode(
+              "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
+          )
+
+      var derivationPath =
+          listOf(
+              Bip32Ed25519Base.harden(44u),
+              Bip32Ed25519Base.harden(283u),
+              Bip32Ed25519Base.harden(0u),
+              0u,
+              0u
+          ) + List(20) { 0u }
+
+      val derivationType = Bip32DerivationType.Peikert
+      assert(derivationPath.size == 25) { "derivationPath size is not 25" }
+
+      try {
+        c.deriveKey(Bip32Ed25519Base.fromSeed(seed.toSeed()), derivationPath, true, derivationType)
+        assert(false) { "Derivation did not fail at level 5+20" }
+      } catch (e: BigIntegerOverflowException) {
+        assert(true)
+      } catch (e: Exception) {
+        assert(false) { "Test failed with unexpected exception!" }
+      }
+    }
   }
 
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
