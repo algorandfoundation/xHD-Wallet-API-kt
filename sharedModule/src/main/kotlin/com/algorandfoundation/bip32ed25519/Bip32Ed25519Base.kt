@@ -331,24 +331,26 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
     // Equation 2
     // However, left is NOT specified to be taken mod 2^256
 
-    val left =
+    val leftBigInteger =
         (BigInteger(1, kl.reversedArray())
-                .plus(
-                    BigInteger(
-                            1,
-                            trunc256MinusGBits(zl.clone(), derivationType.value).reversedArray()
-                        )
-                        .multiply(BigInteger.valueOf(8L))
-                ))
-            .toByteArray()
-            .reversedArray()
-            .let { bytes ->
-              if (bytes.size > ED25519_SCALAR_SIZE) {
-                throw BigIntegerOverflowException()
-              } else {
-                ByteArray(ED25519_SCALAR_SIZE - bytes.size) + bytes
-              }
-            } // Pad to 32 bytes
+            .plus(
+                BigInteger(1, trunc256MinusGBits(zl.clone(), derivationType.value).reversedArray())
+                    .multiply(BigInteger.valueOf(8L))
+            ))
+
+    if (leftBigInteger >= BigInteger.valueOf(2).pow(255)) {
+      throw BigIntegerOverflowException()
+    }
+
+    val left =
+        leftBigInteger.toByteArray().reversedArray().let { bytes ->
+          if (bytes.size > ED25519_SCALAR_SIZE) {
+            throw BigIntegerOverflowException()
+          } else {
+            ByteArray(ED25519_SCALAR_SIZE - bytes.size) + bytes
+          }
+        } // Pad to 32 bytes
+
     var right =
         (BigInteger(1, kr.reversedArray()) + BigInteger(1, zr.reversedArray()))
             .toByteArray()

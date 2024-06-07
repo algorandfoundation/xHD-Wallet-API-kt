@@ -677,6 +677,7 @@ class Bip32Ed25519Test {
           MnemonicCode(
               "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
           )
+      val derivationType = Bip32DerivationType.Peikert
 
       var derivationPath =
           listOf(
@@ -685,9 +686,17 @@ class Bip32Ed25519Test {
               Bip32Ed25519Base.harden(0u),
               0u,
               0u
-          ) + List(20) { 0u }
+          ) + List(19) { 0u }
 
-      val derivationType = Bip32DerivationType.Peikert
+      c.deriveKey(
+          Bip32Ed25519Base.fromSeed(seed.toSeed()),
+          derivationPath,
+          true,
+          derivationType
+      ) // Should not throw
+
+      derivationPath += List(1) { 0u }
+
       assert(derivationPath.size == 25) { "derivationPath size is not 25" }
 
       try {
