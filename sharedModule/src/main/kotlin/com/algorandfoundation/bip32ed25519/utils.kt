@@ -23,7 +23,7 @@ enum class Encoding {
 }
 
 class BigIntegerOverflowException() :
-    IllegalArgumentException("Overflow: zL is larger than the Ed25519 group order")
+    IllegalArgumentException("Overflow: 8*zL is larger than 2^255")
 
 class DataValidationException(message: String) : Exception(message)
 
