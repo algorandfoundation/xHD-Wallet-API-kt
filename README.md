@@ -50,15 +50,15 @@ Below we refer to Bip32Ed25519JVM but the same examples work for Bip32Ed25519And
 Initialize an instance of Bip32Ed25519JVM with seed bytes:
 
 ```kotlin
-    val alice = Bip32Ed25519JVM(seedBytes)
+val alice = Bip32Ed25519JVM(seedBytes)
 ```
 
 Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39` to use a seed phrase instead:
 
 ```kotlin
-    val seed = MnemonicCode(
-                "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
-    val alice = Bip32Ed25519JVM(seed.toSeed())
+val seed = MnemonicCode(
+  "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
+val alice = Bip32Ed25519JVM(seed.toSeed())
 ```
 
 Obviously do NOT make use of that seed phrase!
@@ -84,7 +84,7 @@ In Algorand however, there is an opportunity to assign change values to specific
 Consider the derivation path `m'/44'/283'/0'/0/0`. This corresponds to:
 
 ```kotlin
-    val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
 ```
 
 This returns the public key.
@@ -94,24 +94,22 @@ This returns the public key.
 The user might wish to sign a 32 byte nonce:
 
 ```kotlin
+val nonce = """
+  {"0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95,
+    "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
+    "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
+    "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
+  "29": 143, "30": 123, "31": 27}""" .trimIndent().toByteArray()
 
-    val nonce = """
-        {"0": 255, "1": 103, "2": 26, "3": 222, "4": 7, "5": 86, "6": 55, "7": 95,
-         "8": 197, "9": 179, "10": 249, "11": 252, "12": 232, "13": 252, "14": 176,
-         "15": 39, "16": 112, "17": 131, "18": 52, "19": 63, "20": 212, "21": 58,
-         "22": 226, "23": 89, "24": 64, "25": 94, "26": 23, "27": 91, "28": 128,
-        "29": 143, "30": 123, "31": 27}""" .trimIndent().toByteArray()
+val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
 
-    val publicKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val authSchema = JSONSchema.parseFile("src/test/resources/auth.request.json")
 
-    val authSchema =
-                    JSONSchema.parseFile("src/test/resources/auth.request.json")
+val metadata = SignMetadata(Encoding.NONE, authSchema)
 
-    val metadata = SignMetadata(Encoding.NONE, authSchema)
+val signature = alice.signData(KeyContext.Address, 0u, 0u, 0u, nonce, metadata)
 
-    val signature = alice.signData(KeyContext.Address, 0u, 0u, 0u, nonce, metadata)
-
-    assert(alice.verifyWithPublicKey(signature, nonce, pk))
+assert(alice.verifyWithPublicKey(signature, nonce, pk))
 ```
 
 ### ECDH
@@ -121,15 +119,15 @@ The user might also wish to generate a shared secret with someone else:
 Alice's PoV:
 
 ```kotlin
-    val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
-    val sharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, 0u, bobKey, true)
+val aliceKey = alice.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val sharedSecret = alice.ECDH(KeyContext.Address, 0u, 0u, 0u, bobKey, true)
 ```
 
 Bob's PoV:
 
 ```kotlin
-    val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u, 0u)
-    val sharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, false)
+val bobKey = bob.keyGen(KeyContext.Address, 0u, 0u, 0u)
+val sharedSecret = bob.ECDH(KeyContext.Address, 0u, 0u, 0u, aliceKey, false)
 ```
 
 Underneath the hood the Ed25519 PKs are turned into Curve25519 format.
@@ -154,23 +152,22 @@ Assume that it gets funded by someone. Alice can then start signing her own tran
 // Let's have Alice send a tx!
 
 // Construct the TX:
-val tx =
-        Transaction.PaymentTransactionBuilder()
-                .lookupParams(algod) // lookup fee, firstValid, lastValid
-                .sender(aliceAddress)
-                .receiver(receiver)
-                .amount(algoAmount)
-                .noteUTF8("Keep the change!")
-                .build()
+val tx = Transaction.PaymentTransactionBuilder()
+  .lookupParams(algod) // lookup fee, firstValid, lastValid
+  .sender(aliceAddress)
+  .receiver(receiver)
+  .amount(algoAmount)
+  .noteUTF8("Keep the change!")
+  .build()
 
 // Sign the TX with this library:
 val sig = alice.signAlgoTransaction(
-                            KeyContext.Address,
-                            0u,
-                            0u,
-                            0u,
-                            tx.bytesToSign()
-                    )
+    KeyContext.Address,
+    0u,
+    0u,
+    0u,
+    tx.bytesToSign()
+)
 
 // Turn the sig into Algorand SDK's Signature type
 val txSig = Signature(sig)
@@ -193,17 +190,65 @@ if (!post.isSuccessful) { // Check if there was an issue
 // We wait for confirmation:
 var done = false
 while (!done) {
-    val txInfo = algod.PendingTransactionInformation(post.body()?.txId).execute()
-    if (!txInfo.isSuccessful) {
-        throw RuntimeException("Failed to check on tx progress")
-    }
-    if (txInfo.body()?.confirmedRound != null) {
-        done = true
-    }
+  val txInfo = algod.PendingTransactionInformation(post.body()?.txId).execute()
+  if (!txInfo.isSuccessful) {
+      throw RuntimeException("Failed to check on tx progress")
+  }
+  if (txInfo.body()?.confirmedRound != null) {
+      done = true
+  }
 }
 
 println("Transaction ID: ${post.body()?.txId}")
 ```
+
+### Deriving Child Public Keys
+
+You can also utilize `deriveKey` to derive extended public keys by setting `isPrivate: false`, thus allowing `deriveChildNodePublic` to softly derive `N` descendant public keys / addresses using a single extended key / root. A typical use case is for producing one-time addresses, either to calculate for yourself in an insecure environment, or to calculate someone else's one time addresses.
+
+> [!IMPORTANT]
+> We distinguish between our 32 byte public key (pk) and the 64 byte extended public key (xpk) where xpk is used to derive child nodes in `deriveChildNodePublic` and `deriveChildNodePrivate`. The xpk is a concatenation of the pk and the 32 byte chaincode which serves as a key for the HMAC functions.
+>
+> **xpk should be kept secret** unless you want to allow someone else to derive descendant keys.
+
+Child public key derivation is relevant at the unhardened levels, e.g. in BIP44 get it at the Account level and then derive publicly for Change and keyIndex. Alternatively get it at the Change-level and only derive for keyIndex.
+
+The following example uses the Bip39 library.
+
+```kotlin
+val seed = MnemonicCode(
+            "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
+val bip44Path =
+  listOf(
+    Bip32Ed25519Base.harden(44u),
+    Bip32Ed25519Base.harden(283u),
+    Bip32Ed25519Base.harden(0u),
+    0u,
+  ) // Path to Change = 0
+
+val walletRoot =
+  c.deriveKey(
+    Bip32Ed25519Base.fromSeed(seed.toSeed()),
+    bip44Path,
+    false,
+  )
+```
+
+The output of `deriveKey` is an xpk at the Change-level (`m / 44' / 283' / 0' / 0`) which can be shared. A counter party can then do the following,
+
+```kotlin
+val derivedKey = c.deriveChildNodePublic(walletRoot, 0u)
+```
+
+and derive the descendant child pk/address at the keyIndex specified, in this case 0. Up to 2^31 are allowed, i.e. ~2 billion.
+
+## Derivation Types
+
+This library supports two derivation types, called `Khovratovic` and `Peikert`. The default option is the `Peikert`option, but `Khovratovich` is supported to allow for interoperability with other Ed25519 HD wallet libraries implementing `BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace` by Dmitry Khovratovich and Jason Law.
+
+The difference lies in how many bits of randomization are performed when deriving a new child key. `Khovratovic` keeps 32 bits (4 bytes) and randomizes `256-32=224`bits. `Peikert` on the other hand keeps 9 bits and randomizes `256-9 = 254` bits at each level. The `Peikert` derivation type is thus more secure, but only allows for 8 safe levels of derivation, whereas the `Khovratovic` allows for 2^26.
+
+In practice however, common standards like the BIP44 only have 5 levels of derivation, rendering the millions of additional levels useless. Note that the 3 last levels, Account, Change and keyIndex, allow for many billions of possible addresses - allow from a single seed.
 
 ## Running tests
 
@@ -227,6 +272,14 @@ Using algokit, run the following each time to reset account balances:
 algokit localnet reset && ./gradlew testWithAlgorandSandbox
 ```
 
+As part of the normal test suite we test whether the assumption that we can have a max of 8 levels of security is correct or not for the Peikert derivation type. The same can be done for Khovratovic. However, as that would require `./gradlew test` to take an additional ~30 secs, it is required to run the following:
+
+```bash
+./gradlew testWithKhovratovichSafetyDepth
+```
+
+It will run the same as `./gradle test` (no Sandbox tests) but with the additional check for the Khovratovich derivation type safety depth.
+
 ## License
 
 Copyright 2024 Algorand Foundation
@@ -242,7 +295,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-```
-
-```
