@@ -4,12 +4,11 @@ on:
   push:
     branches:
       - "release/*"
+      - "main"
 
 jobs:
   generate-release:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -25,29 +24,18 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Adjust Version in gradle.properties (and delete any git tags created in the process)
-        uses: cycjimmy/semantic-release-action@v4
+      - name: Setup NPM packages
+        run: npm install --save @semantic-release/git @semantic-release/github semantic-release-replace-plugin
+
+      - name: Semantic Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge Release -> Main
+        uses: devmasx/merge-branch@854d3ac71ed1e9deb668e0074781b81fdd6e771f
         with:
-          working_directory: ./.adjustVersion
-          extra_plugins: |
-            @semantic-release/exec
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit changes to gradle.properties
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add gradle.properties
-          git commit -m "chore: update version in gradle.properties" || (echo "gradle.properties never changed" && exit 1)
-
-      - name: Initialize submodule, generate .jar and .aar, and build (including tests)
-        run: chmod +x initialize.sh && ./initialize.sh
-
-      - name: Run Semantic Release again to publish the release, with the correct versions
-        uses: cycjimmy/semantic-release-action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push changes to the branch
-        run: git push origin HEAD:${{ github.ref }}
+          type: now
+          from_branch: release/x
+          target_branch: main
+          github_token: ${{ secrets.GITHUB_TOKEN }}

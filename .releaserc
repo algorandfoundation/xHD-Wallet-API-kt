@@ -1,17 +1,55 @@
 {
-  "branches": ["release/*"],
+  "branches": [ 
+    "release/*", { 
+      "name": "main",
+      "prerelease": "beta"
+      }
+    ],
   "plugins": [
     "@semantic-release/commit-analyzer",
+    [
+      "@semantic-release-replace-plugin",
+      {
+        "replacements": [
+          {
+            "files": ["gradle.properties"],
+            "from": "version = '.*'",
+            "to": "version = '${nextRelease.version}'",
+            "results": [
+              {
+                "file": "gradle.properties",
+                "hasChanged": true,
+                "numMatches": 1,
+                "numReplacements": 1
+              }
+            ],
+            "countMatches": true
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["gradle.properties"]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+        {
+          "prepareCmd": "chmod +x initialize.sh && ./initialize.sh"
+        }
+      ],
     "@semantic-release/release-notes-generator",
     [
       "@semantic-release/github",
       {
+        "successComment": false,
         "assets": [
           { "path": "./build/Bip32Ed25519-JVM.jar", "label": "JVM Library" },
           { "path": "./build/Bip32Ed25519-Android-release.aar", "label": "Android Library" }
         ]
       }
-    ],
-    "@semantic-release/git"
+    ]
   ]
 }
