@@ -39,6 +39,7 @@ jobs:
 
       - name: Merge Release -> Main
         uses: devmasx/merge-branch@854d3ac71ed1e9deb668e0074781b81fdd6e771f
+        if: github.ref == 'refs/heads/release/1.x'
         with:
           type: now
           target_branch: main
