@@ -30,7 +30,7 @@ jobs:
           node-version: 20
 
       - name: Setup NPM packages
-        run: npm install --save @semantic-release/git @semantic-release/github @google/semantic-release-replace-plugin
+        run: npm install --save @semantic-release/git @semantic-release/github @google/semantic-release-replace-plugin @semantic-release/exec
 
       - name: Semantic Release
         run: npx semantic-release
