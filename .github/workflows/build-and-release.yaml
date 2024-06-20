@@ -1,0 +1,47 @@
+name: Generate Release
+
+on:
+  push:
+    branches:
+      - "release/*"
+      - "main"
+
+jobs:
+  generate-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "adopt"
+
+      - name: Install system-wide LibSodium
+        run: sudo apt-get install -y libsodium-dev
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup NPM packages
+        run: npm install --save @semantic-release/git @semantic-release/github @google/semantic-release-replace-plugin @semantic-release/exec
+
+      - name: Semantic Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge Release -> Main
+        uses: devmasx/merge-branch@854d3ac71ed1e9deb668e0074781b81fdd6e771f
+        if: github.ref == 'refs/heads/release/1.x'
+        with:
+          type: now
+          from_branch: release/1.x
+          target_branch: main
+          github_token: ${{ secrets.GITHUB_TOKEN }}
