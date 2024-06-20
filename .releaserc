@@ -31,7 +31,8 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["gradle.properties"]
+        "assets": ["gradle.properties"],
+        "message": "chore(release): ${nextRelease.version} \n\n${nextRelease.notes}"
       }
     ],
     [
