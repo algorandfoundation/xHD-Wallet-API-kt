@@ -6,7 +6,7 @@
  */
 
 version = project.property("version") as String
-group = "com.algorandfoundation.bip32ed25519"
+group = "com.algorandfoundation.xhdwalletapi"
 
 plugins {
     kotlin("plugin.serialization") version "1.9.22"
@@ -73,7 +73,7 @@ tasks.register<Test>("testWithAlgorandSandbox") {
 }
 
 tasks.jar {
-    archiveFileName.set("Bip32Ed25519-JVM.jar")
+    archiveFileName.set("XHDWalletAPI-JVM.jar")
 }
 
 task("copyJarToRoot", type = Copy::class) {
