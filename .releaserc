@@ -42,8 +42,8 @@
       {
         "successComment": false,
         "assets": [
-          { "path": "./build/Bip32Ed25519-JVM.jar", "label": "JVM Library" },
-          { "path": "./build/Bip32Ed25519-Android-release.aar", "label": "Android Library" }
+          { "path": "./build/XHDWalletAPI-JVM.jar", "label": "JVM Library" },
+          { "path": "./build/XHDWalletAPI-Android-release.aar", "label": "Android Library" }
         ]
       }
     ]

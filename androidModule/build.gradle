@@ -1,5 +1,5 @@
 version = project.property('version')
-group = "com.algorandfoundation.bip32ed25519"
+group = "com.algorandfoundation.xhdwalletapi"
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
@@ -14,8 +14,8 @@ android {
     }
 
     defaultConfig {
-        archivesBaseName = "Bip32Ed25519-Android"
-        namespace "com.algorandfoundation.bip32ed25519"
+        archivesBaseName = "XHDWalletAPI-Android"
+        namespace "com.algorandfoundation.xhdwalletapi"
         minSdkVersion 26
         targetSdkVersion 33
         versionCode 16

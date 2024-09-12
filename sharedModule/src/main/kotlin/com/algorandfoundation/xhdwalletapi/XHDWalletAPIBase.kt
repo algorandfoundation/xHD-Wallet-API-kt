@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.algorandfoundation.bip32ed25519
+package com.algorandfoundation.xhdwalletapi
 
 // import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper // CBOR is not yet supported
 // across all platforms
@@ -34,54 +34,54 @@ val ED25519_SCALAR_SIZE = 32
 val ED25519_POINT_SIZE = 32
 val INDEX_SIZE = 4
 
-abstract class Bip32Ed25519Base(private var seed: ByteArray) {
+abstract class XHDWalletAPIBase(private var seed: ByteArray) {
   abstract val lazySodium: LazySodium
   companion object {
     val prefixes =
-        listOf(
-            "appID",
-            "arc",
-            "aB",
-            "aD",
-            "aO",
-            "aP",
-            "aS",
-            "AS",
-            "BH",
-            "B256",
-            "BR",
-            "CR",
-            "GE",
-            "KP",
-            "MA",
-            "MB",
-            "MX",
-            "NIC",
-            "NIR",
-            "NIV",
-            "NPR",
-            "OT1",
-            "OT2",
-            "PF",
-            "PL",
-            "Program",
-            "ProgData",
-            "PS",
-            "PK",
-            "SD",
-            "SpecialAddr",
-            "STIB",
-            "spc",
-            "spm",
-            "spp",
-            "sps",
-            "spv",
-            "TE",
-            "TG",
-            "TL",
-            "TX",
-            "VO"
-        )
+            listOf(
+                    "appID",
+                    "arc",
+                    "aB",
+                    "aD",
+                    "aO",
+                    "aP",
+                    "aS",
+                    "AS",
+                    "BH",
+                    "B256",
+                    "BR",
+                    "CR",
+                    "GE",
+                    "KP",
+                    "MA",
+                    "MB",
+                    "MX",
+                    "NIC",
+                    "NIR",
+                    "NIV",
+                    "NPR",
+                    "OT1",
+                    "OT2",
+                    "PF",
+                    "PL",
+                    "Program",
+                    "ProgData",
+                    "PS",
+                    "PK",
+                    "SD",
+                    "SpecialAddr",
+                    "STIB",
+                    "spc",
+                    "spm",
+                    "spp",
+                    "sps",
+                    "spv",
+                    "TE",
+                    "TG",
+                    "TL",
+                    "TX",
+                    "VO"
+            )
 
     /**
      * Harden a number (set the highest bit to 1) Note that the input is UInt and the output is also
@@ -102,10 +102,10 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
      */
 
     fun getBIP44PathFromContext(
-        context: KeyContext,
-        account: UInt,
-        change: UInt,
-        keyIndex: UInt
+            context: KeyContext,
+            account: UInt,
+            change: UInt,
+            keyIndex: UInt
     ): List<UInt> {
       return when (context) {
         KeyContext.Address -> listOf(harden(44u), harden(283u), harden(account), change, keyIndex)
@@ -127,24 +127,25 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
       }
 
       val decoded: ByteArray =
-          when (metadata.encoding) {
-            Encoding.BASE64 -> Base64.getDecoder().decode(message)
-            // Encoding.CBOR -> // CBOR is not yet supported
-            // across all platforms
-            //         ObjectMapper()
-            //                 .writeValueAsString(
-            //
-            // CBORMapper().readValue(message, Map::class.java)
-            //                 )
-            //                 .toByteArray()
-            Encoding.MSGPACK ->
-                ObjectMapper()
-                    .writeValueAsString(
-                        ObjectMapper(MessagePackFactory()).readValue(message, Map::class.java)
-                    )
-                    .toByteArray()
-            Encoding.NONE -> message
-          }
+              when (metadata.encoding) {
+                Encoding.BASE64 -> Base64.getDecoder().decode(message)
+                // Encoding.CBOR -> // CBOR is not yet supported
+                // across all platforms
+                //         ObjectMapper()
+                //                 .writeValueAsString(
+                //
+                // CBORMapper().readValue(message, Map::class.java)
+                //                 )
+                //                 .toByteArray()
+                Encoding.MSGPACK ->
+                        ObjectMapper()
+                                .writeValueAsString(
+                                        ObjectMapper(MessagePackFactory())
+                                                .readValue(message, Map::class.java)
+                                )
+                                .toByteArray()
+                Encoding.NONE -> message
+              }
 
       // Validate with schema
       try {
@@ -221,9 +222,9 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - (z, c) where z is the 64-byte child key and c is the chain code
    */
   open fun deriveNonHardened(
-      kl: ByteArray,
-      cc: ByteArray,
-      index: UInt
+          kl: ByteArray,
+          cc: ByteArray,
+          index: UInt
   ): Pair<ByteArray, ByteArray> {
     val data = ByteBuffer.allocate(1 + ED25519_SCALAR_SIZE + INDEX_SIZE)
     data.put(1 + ED25519_SCALAR_SIZE, index.toByte())
@@ -261,10 +262,10 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - (z, c) where z is the 64-byte child key and c is the chain code
    */
   internal fun deriveHardened(
-      kl: ByteArray,
-      kr: ByteArray,
-      cc: ByteArray,
-      index: UInt
+          kl: ByteArray,
+          kr: ByteArray,
+          cc: ByteArray,
+          index: UInt
   ): Pair<ByteArray, ByteArray> {
     val indexLEBytes = ByteArray(4) { i -> ((index shr (8 * i)) and 0xFFu).toByte() }
     val data = ByteBuffer.allocate(1 + 2 * ED25519_SCALAR_SIZE + INDEX_SIZE)
@@ -304,20 +305,20 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * 32 bytes of the child key, and c is the chain code. Total 96 bytes
    */
   public fun deriveChildNodePrivate(
-      extendedKey: ByteArray,
-      index: UInt,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          extendedKey: ByteArray,
+          index: UInt,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
     val kl = extendedKey.sliceArray(0 until ED25519_SCALAR_SIZE)
     val kr = extendedKey.sliceArray(ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE)
     val cc =
-        extendedKey.sliceArray(
-            2 * ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE + CHAIN_CODE_SIZE
-        )
+            extendedKey.sliceArray(
+                    2 * ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE + CHAIN_CODE_SIZE
+            )
 
     val (z, chainCode) =
-        if (index < 0x80000000.toUInt()) deriveNonHardened(kl, cc, index)
-        else deriveHardened(kl, kr, cc, index)
+            if (index < 0x80000000.toUInt()) deriveNonHardened(kl, cc, index)
+            else deriveHardened(kl, kr, cc, index)
 
     val zl = z.sliceArray(0 until ED25519_SCALAR_SIZE)
     val zr = z.sliceArray(ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE)
@@ -332,40 +333,44 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
     // However, left is NOT specified to be taken mod 2^256
 
     val leftBigInteger =
-        (BigInteger(1, kl.reversedArray())
-            .plus(
-                BigInteger(1, trunc256MinusGBits(zl.clone(), derivationType.value).reversedArray())
-                    .multiply(BigInteger.valueOf(8L))
-            ))
+            (BigInteger(1, kl.reversedArray())
+                    .plus(
+                            BigInteger(
+                                            1,
+                                            trunc256MinusGBits(zl.clone(), derivationType.value)
+                                                    .reversedArray()
+                                    )
+                                    .multiply(BigInteger.valueOf(8L))
+                    ))
 
     if (leftBigInteger >= BigInteger.valueOf(2).pow(255)) {
       throw BigIntegerOverflowException()
     }
 
     val left =
-        leftBigInteger.toByteArray().reversedArray().let { bytes ->
-          if (bytes.size > ED25519_SCALAR_SIZE) {
-            throw BigIntegerOverflowException()
-          } else {
-            ByteArray(ED25519_SCALAR_SIZE - bytes.size) + bytes
-          }
-        } // Pad to 32 bytes
+            leftBigInteger.toByteArray().reversedArray().let { bytes ->
+              if (bytes.size > ED25519_SCALAR_SIZE) {
+                throw BigIntegerOverflowException()
+              } else {
+                ByteArray(ED25519_SCALAR_SIZE - bytes.size) + bytes
+              }
+            } // Pad to 32 bytes
 
     var right =
-        (BigInteger(1, kr.reversedArray()) + BigInteger(1, zr.reversedArray()))
-            .toByteArray()
-            .reversedArray()
-            .let { bytes ->
-              bytes.sliceArray(0 until minOf(bytes.size, ED25519_SCALAR_SIZE))
-            } // Slice to 32 bytes
+            (BigInteger(1, kr.reversedArray()) + BigInteger(1, zr.reversedArray()))
+                    .toByteArray()
+                    .reversedArray()
+                    .let { bytes ->
+                      bytes.sliceArray(0 until minOf(bytes.size, ED25519_SCALAR_SIZE))
+                    } // Slice to 32 bytes
 
     right = right + ByteArray((ED25519_SCALAR_SIZE - right.size + 32) % 32)
 
     return ByteBuffer.allocate(ED25519_SCALAR_SIZE + ED25519_SCALAR_SIZE + CHAIN_CODE_SIZE)
-        .put(left)
-        .put(right)
-        .put(chainCode)
-        .array()
+            .put(left)
+            .put(right)
+            .put(chainCode)
+            .array()
   }
 
   /**
@@ -387,12 +392,12 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * of the chain code
    */
   public fun deriveChildNodePublic(
-      extendedKey: ByteArray,
-      index: UInt,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          extendedKey: ByteArray,
+          index: UInt,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
     if (index > 0x80000000u)
-        throw IllegalArgumentException("Cannot derive public key with hardened index")
+            throw IllegalArgumentException("Cannot derive public key with hardened index")
 
     val pk = extendedKey.sliceArray(0 until ED25519_POINT_SIZE)
     val cc = extendedKey.sliceArray(ED25519_POINT_SIZE until ED25519_POINT_SIZE + CHAIN_CODE_SIZE)
@@ -425,10 +430,12 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
     */
 
     val left =
-        (BigInteger(1, zl.reversedArray()) * BigInteger.valueOf(8L))
-            .toByteArray()
-            .reversedArray()
-            .let { bytes -> bytes + ByteArray(ED25519_SCALAR_SIZE - bytes.size) } // Pad to 32 bytes
+            (BigInteger(1, zl.reversedArray()) * BigInteger.valueOf(8L))
+                    .toByteArray()
+                    .reversedArray()
+                    .let { bytes ->
+                      bytes + ByteArray(ED25519_SCALAR_SIZE - bytes.size)
+                    } // Pad to 32 bytes
 
     val p = lazySodium.cryptoScalarMultEd25519BaseNoclamp(left).toBytes()
 
@@ -442,9 +449,9 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
     lazySodium.cryptoCoreEd25519Add(newPK, p, pk)
 
     return ByteBuffer.allocate(ED25519_POINT_SIZE + CHAIN_CODE_SIZE)
-        .put(newPK)
-        .put(childChainCode)
-        .array()
+            .put(newPK)
+            .put(childChainCode)
+            .array()
   }
 
   /** z_L by */
@@ -484,10 +491,10 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - The public key of 32 bytes. If isPrivate is true, returns the private key instead.
    */
   public fun deriveKey(
-      rootKey: ByteArray,
-      bip44Path: List<UInt>,
-      isPrivate: Boolean,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          rootKey: ByteArray,
+          bip44Path: List<UInt>,
+          isPrivate: Boolean,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
     var derived = rootKey
     for (path in bip44Path) {
@@ -497,11 +504,11 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
       return derived
     } else {
       return lazySodium
-          .cryptoScalarMultEd25519BaseNoclamp(derived.sliceArray(0 until ED25519_SCALAR_SIZE))
-          .toBytes() +
-          derived.sliceArray(
-              2 * ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE + CHAIN_CODE_SIZE
-          )
+              .cryptoScalarMultEd25519BaseNoclamp(derived.sliceArray(0 until ED25519_SCALAR_SIZE))
+              .toBytes() +
+              derived.sliceArray(
+                      2 * ED25519_SCALAR_SIZE until 2 * ED25519_SCALAR_SIZE + CHAIN_CODE_SIZE
+              )
     }
   }
 
@@ -517,16 +524,16 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - public key 32 bytes
    */
   fun keyGen(
-      context: KeyContext,
-      account: UInt,
-      change: UInt,
-      keyIndex: UInt,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          context: KeyContext,
+          account: UInt,
+          change: UInt,
+          keyIndex: UInt,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
     val rootKey: ByteArray = fromSeed(this.seed)
     val bip44Path: List<UInt> = getBIP44PathFromContext(context, account, change, keyIndex)
     return this.deriveKey(rootKey, bip44Path, false, derivationType)
-        .sliceArray(0 until ED25519_POINT_SIZE)
+            .sliceArray(0 until ED25519_POINT_SIZE)
   }
 
   /**
@@ -547,13 +554,13 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - signature holding R and S, totally 64 bytes
    */
   fun signData(
-      context: KeyContext,
-      account: UInt,
-      change: UInt,
-      keyIndex: UInt,
-      data: ByteArray,
-      metadata: SignMetadata,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          context: KeyContext,
+          account: UInt,
+          change: UInt,
+          keyIndex: UInt,
+          data: ByteArray,
+          metadata: SignMetadata,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
 
     val valid = validateData(data, metadata)
@@ -563,9 +570,9 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
     }
 
     return rawSign(
-        getBIP44PathFromContext(context, account, change, keyIndex),
-        data,
-        derivationType
+            getBIP44PathFromContext(context, account, change, keyIndex),
+            data,
+            derivationType
     )
   }
 
@@ -584,17 +591,17 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - SignedTransaction object
    */
   fun signAlgoTransaction(
-      context: KeyContext,
-      account: UInt,
-      change: UInt,
-      keyIndex: UInt,
-      prefixEncodedTx: ByteArray,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          context: KeyContext,
+          account: UInt,
+          change: UInt,
+          keyIndex: UInt,
+          prefixEncodedTx: ByteArray,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
     return rawSign(
-        getBIP44PathFromContext(context, account, change, keyIndex),
-        prefixEncodedTx,
-        derivationType
+            getBIP44PathFromContext(context, account, change, keyIndex),
+            prefixEncodedTx,
+            derivationType
     )
   }
 
@@ -614,9 +621,9 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - signature holding R and S, totally 64 bytes
    */
   fun rawSign(
-      bip44Path: List<UInt>,
-      data: ByteArray,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          bip44Path: List<UInt>,
+          data: ByteArray,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
 
     val rootKey: ByteArray = fromSeed(this.seed)
@@ -638,12 +645,15 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
 
     // \(5): S = (r + h * k) mod q
     var S =
-        this.safeModQ(
-            lazySodium.cryptoCoreEd25519ScalarAdd(
-                r,
-                lazySodium.cryptoCoreEd25519ScalarMul(h, scalar).toByteArray().reversedArray()
+            this.safeModQ(
+                    lazySodium.cryptoCoreEd25519ScalarAdd(
+                            r,
+                            lazySodium
+                                    .cryptoCoreEd25519ScalarMul(h, scalar)
+                                    .toByteArray()
+                                    .reversedArray()
+                    )
             )
-        )
 
     return R + S
   }
@@ -709,25 +719,25 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
    * - raw 32 bytes shared secret
    */
   fun ECDH(
-      context: KeyContext,
-      account: UInt,
-      change: UInt,
-      keyIndex: UInt,
-      otherPartyPub: ByteArray,
-      meFirst: Boolean,
-      derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+          context: KeyContext,
+          account: UInt,
+          change: UInt,
+          keyIndex: UInt,
+          otherPartyPub: ByteArray,
+          meFirst: Boolean,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
   ): ByteArray {
 
     val rootKey: ByteArray = fromSeed(this.seed)
 
     val publicKey: ByteArray = this.keyGen(context, account, change, keyIndex, derivationType)
     val privateKey: ByteArray =
-        this.deriveKey(
-            rootKey,
-            getBIP44PathFromContext(context, account, change, keyIndex),
-            true,
-            derivationType
-        )
+            this.deriveKey(
+                    rootKey,
+                    getBIP44PathFromContext(context, account, change, keyIndex),
+                    true,
+                    derivationType
+            )
 
     val scalar: ByteArray = privateKey.sliceArray(0 until 32)
 
@@ -749,10 +759,10 @@ abstract class Bip32Ed25519Base(private var seed: ByteArray) {
 
     val output = ByteArray(32)
     lazySodium.cryptoGenericHash(
-        output,
-        32,
-        concatenated,
-        concatenated.size.toLong(),
+            output,
+            32,
+            concatenated,
+            concatenated.size.toLong(),
     )
     return output
   }

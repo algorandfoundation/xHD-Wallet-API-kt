@@ -27,5 +27,5 @@ dependencyResolutionManagement {
 }
 
 
-rootProject.name = "Bip32Ed25519"
+rootProject.name = "XHDWalletAPI"
 include(":sharedModule", ":androidModule", ":jvmModule")

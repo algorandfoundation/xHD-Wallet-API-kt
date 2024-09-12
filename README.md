@@ -23,7 +23,7 @@ This library uses a forked version of LazySodium-Java that exposes Ed25519 opera
 ./initialize.sh
 ```
 
-Running this will create a build/ folder containing the Bip32Ed25519-Android...aar and Bip32Ed25519-JVM-...jar files respectively. These can be imported in your project.
+Running this will create a build/ folder containing the XHDWalletAPI-Android...aar and XHDWalletAPI-JVM-...jar files respectively. These can be imported in your project.
 
 ### Note: For Linux Users
 
@@ -53,12 +53,12 @@ Afterwards, merge the branch back into `main`. `gradle.properties` which contain
 
 ## How to Use
 
-Below we refer to Bip32Ed25519JVM but the same examples work for Bip32Ed25519Android.
+Below we refer to XHDWalletAPIJVM but the same examples work for XHDWalletAPIAndroid.
 
-Initialize an instance of Bip32Ed25519JVM with seed bytes:
+Initialize an instance of XHDWalletAPIJVM with seed bytes:
 
 ```kotlin
-val alice = Bip32Ed25519JVM(seedBytes)
+val alice = XHDWalletAPIJVM(seedBytes)
 ```
 
 Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39` to use a seed phrase instead:
@@ -66,7 +66,7 @@ Consider using a BIP-39 compatible library like `cash.z.ecc.android:kotlin-bip39
 ```kotlin
 val seed = MnemonicCode(
   "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
-val alice = Bip32Ed25519JVM(seed.toSeed())
+val alice = XHDWalletAPIJVM(seed.toSeed())
 ```
 
 Obviously do NOT make use of that seed phrase!
@@ -228,15 +228,15 @@ val seed = MnemonicCode(
             "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray())
 val bip44Path =
   listOf(
-    Bip32Ed25519Base.harden(44u),
-    Bip32Ed25519Base.harden(283u),
-    Bip32Ed25519Base.harden(0u),
+    XHDWalletAPIBase.harden(44u),
+    XHDWalletAPIBase.harden(283u),
+    XHDWalletAPIBase.harden(0u),
     0u,
   ) // Path to Change = 0
 
 val walletRoot =
   c.deriveKey(
-    Bip32Ed25519Base.fromSeed(seed.toSeed()),
+    XHDWalletAPIBase.fromSeed(seed.toSeed()),
     bip44Path,
     false,
   )

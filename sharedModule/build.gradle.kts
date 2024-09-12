@@ -6,7 +6,7 @@ plugins {
     `java-library`
 }
 
-group = "com.algorandfoundation.bip32ed25519"
+group = "com.algorandfoundation.xhdwalletapi"
 version = project.property("version") as String
 
 

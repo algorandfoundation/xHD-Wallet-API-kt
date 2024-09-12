@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package com.algorandfoundation.bip32ed25519
+package com.algorandfoundation.xhdwalletapi
 
-import com.goterl.lazysodium.LazySodiumJava
-import com.goterl.lazysodium.SodiumJava
-import com.goterl.lazysodium.utils.LibraryLoader
+import com.goterl.lazysodium.LazySodiumAndroid
+import com.goterl.lazysodium.SodiumAndroid
 
-open class Bip32Ed25519JVM(private var seed: ByteArray) : Bip32Ed25519Base(seed) {
-    override val lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
+class XHDWalletAPIAndroid(private var seed: ByteArray) : XHDWalletAPIBase(seed) {
+    override val lazySodium = LazySodiumAndroid(SodiumAndroid())
 }
