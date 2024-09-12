@@ -74,7 +74,7 @@ class XHDWalletAPITest {
                                 MnemonicCode(
                                         "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
                                 )
-                        c = XHDWalletAPIXHDWalletAPIJVM(seed.toSeed())
+                        c = XHDWalletAPIJVM(seed.toSeed())
                 }
 
                 @Test
