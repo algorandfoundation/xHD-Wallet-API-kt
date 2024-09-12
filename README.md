@@ -1,4 +1,4 @@
-# BIP32-ED25519-Kotlin
+# xHD Wallet API - Kotlin
 
 A Kotlin implementation of ARC-0052 Algorand, in accordance with the paper BIP32-Ed25519 Hierarchical Deterministic Keys over a Non-linear Keyspace.
 
