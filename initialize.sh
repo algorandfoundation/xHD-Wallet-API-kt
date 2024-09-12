@@ -16,7 +16,6 @@ cd ..
 find lazysodium-java/build/libs/ -type f \( -name "lazysodium-java-*-javadoc.jar" -o -name "lazysodium-java-*.jar" \) ! -name "*-sources.jar" -exec cp {} sharedModule/libs/ \;
 
 echo "Attempting to build"
-gradle wrapper --gradle-version 8.6
 ./gradlew build
 
 echo "Checking if XHDWalletAPI-Android*.aar and XHDWalletAPI-JVM.jar exist in build/ directory..."
