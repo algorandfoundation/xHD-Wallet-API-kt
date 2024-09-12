@@ -1,4 +1,4 @@
-package com.algorandfoundation.bip32ed25519
+package com.algorandfoundation.xhdwalletapi
 
 import java.security.MessageDigest
 import java.util.Arrays
@@ -23,7 +23,7 @@ enum class Encoding {
 }
 
 class BigIntegerOverflowException() :
-    IllegalArgumentException("Overflow: 8*zL is larger than 2^255")
+        IllegalArgumentException("Overflow: 8*zL is larger than 2^255")
 
 class DataValidationException(message: String) : Exception(message)
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.algorandfoundation.bip32ed25519
+package com.algorandfoundation.xhdwalletapi
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
@@ -39,7 +39,7 @@ class AlgoLocalNetTest {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     internal class AlgoSDKTests {
 
-        private lateinit var alice: Bip32Ed25519JVM
+        private lateinit var alice: XHDWalletAPIJVM
         private lateinit var algod: AlgodClient
         private lateinit var indexer: IndexerClient
         private lateinit var token: String
@@ -61,7 +61,7 @@ class AlgoLocalNetTest {
                             )
                             .toSeed()
 
-            alice = Bip32Ed25519JVM(aliceSeed)
+            alice = XHDWalletAPIJVM(aliceSeed)
 
             // Token to sandbox
             token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
