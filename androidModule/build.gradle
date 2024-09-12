@@ -24,9 +24,8 @@ android {
         multiDexEnabled true
     }
 
-    lint {
-        baseline = file("lint-baseline.xml")
-        abortOnError false
+    lintOptions {
+        baseline file("lint-baseline.xml")
     }
 
     sourceSets {
