@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.algorandfoundation.xhdwalletapi
+package foundation.algorand.xhdwalletapi
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
