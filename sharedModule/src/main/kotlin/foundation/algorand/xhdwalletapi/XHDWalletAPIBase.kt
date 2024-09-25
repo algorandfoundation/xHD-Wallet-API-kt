@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.algorandfoundation.xhdwalletapi
+package foundation.algorand.xhdwalletapi
 
 // import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper // CBOR is not yet supported
 // across all platforms

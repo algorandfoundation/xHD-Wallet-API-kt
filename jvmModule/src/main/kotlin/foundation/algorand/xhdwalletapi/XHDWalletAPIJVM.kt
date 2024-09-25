@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package com.algorandfoundation.xhdwalletapi
+package foundation.algorand.xhdwalletapi
 
-import com.goterl.lazysodium.LazySodiumAndroid
-import com.goterl.lazysodium.SodiumAndroid
+import com.goterl.lazysodium.LazySodiumJava
+import com.goterl.lazysodium.SodiumJava
+import com.goterl.lazysodium.utils.LibraryLoader
 
-class XHDWalletAPIAndroid(private var seed: ByteArray) : XHDWalletAPIBase(seed) {
-    override val lazySodium = LazySodiumAndroid(SodiumAndroid())
+open class XHDWalletAPIJVM(private var seed: ByteArray) : XHDWalletAPIBase(seed) {
+    override val lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
 }

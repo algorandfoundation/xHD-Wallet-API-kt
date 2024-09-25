@@ -6,7 +6,7 @@
  */
 
 version = project.property("version") as String
-group = "com.algorandfoundation.xhdwalletapi"
+group = "foundation.algorand.xhdwalletapi"
 
 plugins {
     kotlin("plugin.serialization") version "1.9.22"
