@@ -59,6 +59,20 @@ tasks.register<Jar>("sourcesJar") {
     from(sourceSets.main.get().allSource)
 }
 
+// Create a "fat" JAR containing the runtime dependencies.
+tasks.register<Jar>("fatJar") {
+    archiveClassifier.set("all")
+    from(sourceSets.main.get().output)
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+    })
+}
+
+
 // Run ./gradlew test to execute tests not requiring an Algorand Sandbox network
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
@@ -109,11 +123,13 @@ tasks.named("build") {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            from(components["java"])
             groupId = project.group.toString()
             artifactId = "xhdwalletapi"
             version = project.version.toString()
 
+            artifact(tasks["fatJar"]) {
+                classifier = null
+            }
             artifact(tasks["javadocJar"])
             artifact(tasks["sourcesJar"])
 
