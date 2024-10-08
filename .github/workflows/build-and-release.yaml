@@ -3,8 +3,16 @@ name: Generate Release
 on:
   push:
     branches:
-      - "release/*"
-      - "main"
+      - main
+      - release/1.x
+  workflow_dispatch:
+
+concurrency: release
+
+permissions:
+  contents: write
+  issues: write
+  checks: write
 
 jobs:
   generate-release:
@@ -24,6 +32,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Initialize submodule, generate jars, and build (including tests)
+        run: chmod +x initialize.sh && ./initialize.sh
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -36,3 +47,28 @@ jobs:
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare files
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./gradlew publish
+
+      - name: Publish to Maven Central
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./gradlew publishToMavenCentralPortal
+
+      - name: Merge Release -> Trunk
+        uses: devmasx/merge-branch@854d3ac71ed1e9deb668e0074781b81fdd6e771f
+        if: github.ref == 'refs/heads/release/1.x'
+        with:
+          type: now
+          from_branch: release/1.x
+          target_branch: main
+          github_token: ${{ secrets.GITHUB_TOKEN }}
