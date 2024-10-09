@@ -8,7 +8,6 @@ buildscript {
     }
     dependencies {
         classpath "tech.yanand.maven-central-publish:tech.yanand.maven-central-publish.gradle.plugin:1.2.0"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:2.0.0-Beta"
     }
 }
 
@@ -81,12 +80,6 @@ task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
 }
 
-task javadocJar(type: Jar) {
-    archiveClassifier.set('javadoc')
-    from tasks.dokkaHtml
-}
-
-
 publishing {
         publications {
             mavenAndroid(MavenPublication) {
@@ -98,7 +91,6 @@ publishing {
                 classifier = null
             }
             artifact(sourcesJar)
-            artifact(javadocJar)
 
             pom {
                 name.set("XHDWalletAPI-Android")
