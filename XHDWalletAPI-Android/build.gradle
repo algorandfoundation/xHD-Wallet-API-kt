@@ -1,0 +1,154 @@
+version = project.property('version')
+group = "foundation.algorand.xhdwalletapi"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "tech.yanand.maven-central-publish:tech.yanand.maven-central-publish.gradle.plugin:1.2.0"
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+apply plugin: 'tech.yanand.maven-central-publish'
+
+
+android {
+    compileSdkVersion 34
+    buildToolsVersion "33.0.3"
+
+    buildFeatures {
+        viewBinding = true
+    }
+
+    defaultConfig {
+        archivesBaseName = "XHDWalletAPI-Android"
+        namespace "foundation.algorand.xhdwalletapi"
+        minSdkVersion 26
+        targetSdkVersion 34
+        versionCode 16
+        versionName version
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
+
+    lintOptions {
+        baseline file("lint-baseline.xml")
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['../sharedModule/src/main/kotlin']
+            jni.srcDirs = []
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+dependencies {
+    api project(':sharedModule')
+    api fileTree(dir: '../sharedModule/libs', include: '*.jar')
+}
+
+task copyAarToRoot(type: Copy) {
+    dependsOn assemble
+
+    from "$buildDir/outputs/aar"
+    into "$rootDir/build"
+    include "*.aar"
+}
+
+build.finalizedBy(copyAarToRoot)
+
+task sourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from android.sourceSets.main.java.srcDirs
+}
+
+publishing {
+        publications {
+            mavenAndroid(MavenPublication) {
+            groupId = project.group
+            artifactId = "xhdwalletapi-android"
+            version = project.version
+
+            artifact("$buildDir/outputs/aar/${archivesBaseName}-release.aar") {
+                classifier = null
+            }
+            artifact(sourcesJar)
+
+            pom {
+                name.set("XHDWalletAPI-Android")
+                description.set("A library for extended hierarchical deterministic wallets for Android")
+                url.set("https://github.com/HashMapsData2Value/hmd2v-fork-xHD-Wallet-API-kt")
+
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id.set("AlgrandFoundation")
+                        name.set("Algorand Foundation")
+                        email.set("press@algorand.foundation")
+                    }
+                }
+                
+                scm {
+                    connection.set("scm:git:git://github.com/AlgorandFoundation/xHD-Wallet-API-kt.git")
+                    developerConnection.set("scm:git:ssh://github.com/AlgorandFoundation/xHD-Wallet-API-kt.git")
+                    url.set("https://github.com/AlgorandFoundation/xHD-Wallet-API-kt.git")
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "Local"
+            url = uri(layout.buildDirectory.dir("repos/bundles_android").get().asFile.toURI())
+        }
+    }
+}
+
+signing {
+    def signingKey = System.getenv("GPG_PRIVATE_KEY") ?: ""
+    def signingPassword = System.getenv("GPG_PASSPHRASE") ?: ""
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign(publishing.publications["mavenAndroid"])
+}
+
+def username = System.getenv("OSSRH_USERNAME") ?: ""
+def password = System.getenv("OSSRH_PASSWORD") ?: ""
+
+mavenCentral {
+    repoDir = layout.buildDirectory.dir("repos/bundles_android")
+    // Token for Publisher API calls obtained from Sonatype official,
+    // it should be Base64 encoded of "username:password".
+    authToken = Base64.getEncoder().encodeToString("$username:$password".getBytes())
+    // Whether the upload should be automatically published or not. Use 'USER_MANAGED' if you wish to do this manually.
+    // This property is optional and defaults to 'AUTOMATIC'.
+    publishingType = "AUTOMATIC"
+    // Max wait time for status API to get 'PUBLISHING' or 'PUBLISHED' status when the publishing type is 'AUTOMATIC',
+    // or additionally 'VALIDATED' when the publishing type is 'USER_MANAGED'.
+    // This property is optional and defaults to 60 seconds.
+    maxWait = 500
+}

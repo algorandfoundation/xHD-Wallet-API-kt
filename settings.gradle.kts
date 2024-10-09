@@ -28,4 +28,4 @@ dependencyResolutionManagement {
 
 
 rootProject.name = "XHDWalletAPI"
-include(":sharedModule", ":androidModule", ":jvmModule")
+include(":sharedModule", ":XHDWalletAPI-Android", ":XHDWalletAPI-JVM")
