@@ -49,7 +49,7 @@ This project follows [Semantic Versioning](https://semver.org) guidelines and us
 
 To create a new release, merge off of `main` into the release branch, e.g. `release/1.x`. `semantic-release` will run, calculate the next version number based off of the commits, create a corresponding tag and produce a release. The release notes will have been populated from the older commits.
 
-Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by androidModule, jvmModule and sharedModule will have also been updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules.
+Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by XHDWalletAPI-Android, XHDWalletAPI-JVM and sharedModule will have also been updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules.
 
 ## How to Use
 
