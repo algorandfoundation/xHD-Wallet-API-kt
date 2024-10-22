@@ -15,7 +15,36 @@ Currently there are two folders, one to create an .aar file for use in Android, 
 | Android     | 26      |
 | Java        | 17      |
 
-## Installation
+## Installation - How to Incorporate Into Your Project
+
+### Android
+
+Add the following to your build.gradle.kts:
+
+```kotlin
+implementation("net.java.dev.jna:jna:5.14.0@aar")
+implementation("foundation.algorand.xhdwalletapi:xhdwalletapi-android:{VERSION}")
+```
+
+JNA is necessary for the app to understand the path to the LibSodium binaries.
+
+### Java
+
+```kotlin
+implementation("foundation.algorand.xhdwalletapi:xhdwalletapi:{VERSION}")
+```
+
+### BIP39
+
+You might find it helpful to use a BIP39 library. Include one like so:
+
+```kotlin
+implementation("cash.z.ecc.android:kotlin-bip39:1.0.7")
+```
+
+The examples below use that library.
+
+## Setup (local development)
 
 This library uses a forked version of LazySodium-Java that exposes Ed25519 operations. The fork has been added as a Git Submodule. It needs to be initialized, built and have its .jar files moved into lib/libs at the root level of this repository.
 
@@ -49,7 +78,7 @@ This project follows [Semantic Versioning](https://semver.org) guidelines and us
 
 To create a new release, merge off of `main` into the release branch, e.g. `release/1.x`. `semantic-release` will run, calculate the next version number based off of the commits, create a corresponding tag and produce a release. The release notes will have been populated from the older commits.
 
-Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by androidModule, jvmModule and sharedModule will have also been updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules.
+Afterwards, merge the branch back into `main`. `gradle.properties` which contains the version read by XHDWalletAPI-Android, XHDWalletAPI-JVM and sharedModule will have also been updated by `semantic-release`, ensuring the repository release version on GitHub is in-sync with the versions for the respective modules.
 
 ## How to Use
 
