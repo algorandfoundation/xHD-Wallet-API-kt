@@ -94,8 +94,8 @@ publishing {
 
             pom {
                 name.set("XHDWalletAPI-Android")
-                description.set("A library for extended hierarchical deterministic wallets for Android")
-                url.set("https://github.com/HashMapsData2Value/hmd2v-fork-xHD-Wallet-API-kt")
+                description.set("A library for extended hierarchical deterministic wallets for Android. For more information, refer to https://github.com/AlgorandFoundation/xHD-Wallet-API-kt.")
+                url.set("https://github.com/AlgorandFoundation/xHD-Wallet-API-kt")
 
                 licenses {
                     license {

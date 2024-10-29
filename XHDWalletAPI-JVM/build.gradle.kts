@@ -135,7 +135,7 @@ publishing {
 
             pom {
                 name.set("XHDWalletAPI")
-                description.set("A library for extended hierarchical deterministic wallets")
+                description.set("A library for extended hierarchical deterministic wallets for JVM. For more information, refer to https://github.com/AlgorandFoundation/xHD-Wallet-API-kt.")
                 url.set("https://github.com/AlgorandFoundation/xHD-Wallet-API-kt")
                 
                 licenses {
