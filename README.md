@@ -9,11 +9,11 @@ Currently there are two folders, one to create an .aar file for use in Android, 
 ## Requirements
 
 | Requirement | Version |
-| ----------- | ------- |
+| ----------- |---------|
 | Kotlin      | 1.9.22  |
 | Gradle      | 8.6     |
 | Android     | 26      |
-| Java        | 17      |
+| Java        | 21      |
 
 ## Installation - How to Incorporate Into Your Project
 

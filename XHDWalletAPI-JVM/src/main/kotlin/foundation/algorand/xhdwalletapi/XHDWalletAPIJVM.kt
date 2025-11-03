@@ -21,6 +21,6 @@ import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.LibraryLoader
 
-open class XHDWalletAPIJVM(private var seed: ByteArray) : XHDWalletAPIBase(seed) {
+open class XHDWalletAPIJVM(seed: ByteArray) : XHDWalletAPIBase(seed) {
     override val lazySodium = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUNDLED))
 }

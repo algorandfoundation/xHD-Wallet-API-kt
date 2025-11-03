@@ -19,13 +19,11 @@ package foundation.algorand.xhdwalletapi
 
 import cash.z.ecc.android.bip39.Mnemonics.MnemonicCode
 import cash.z.ecc.android.bip39.toSeed
-import com.algorand.algosdk.crypto.Address
 import com.goterl.lazysodium.LazySodiumJava
 import com.goterl.lazysodium.SodiumJava
 import com.goterl.lazysodium.utils.Key
 import com.goterl.lazysodium.utils.LibraryLoader
 import java.util.Base64
-import kotlin.collections.component1
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -33,6 +31,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import net.pwall.json.schema.JSONSchema
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
 
 /*
@@ -63,8 +62,9 @@ val ls: LazySodiumJava = LazySodiumJava(SodiumJava(LibraryLoader.Mode.PREFER_BUN
 
 class XHDWalletAPITest {
 
+        @Nested
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-        internal class KeyGenTests {
+        inner class KeyGenTests {
 
                 private lateinit var c: XHDWalletAPIJVM
 
@@ -890,8 +890,9 @@ class XHDWalletAPITest {
                 }
         }
 
+        @Nested
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-        internal class ValidateDataTests {
+        inner class ValidateDataTests {
 
                 // Inspired by
                 // https://github.com/algorandfoundation/ARCs/blob/d44a8e9ecb62152d419f1b4ea50d72baba6b5ba3/assets/arc-0052/contextual.api.crypto.spec.ts#L218
@@ -1269,8 +1270,9 @@ class XHDWalletAPITest {
                 }
         }
 
+        @Nested
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-        internal class SignTypedDataTests {
+        inner class SignTypedDataTests {
                 private lateinit var c: XHDWalletAPIJVM
 
                 @BeforeAll
@@ -1745,8 +1747,9 @@ class XHDWalletAPITest {
                 }
         }
 
+        @Nested
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-        internal class ECDHTests {
+        inner class ECDHTests {
 
                 private lateinit var alice: XHDWalletAPIJVM
                 private lateinit var bob: XHDWalletAPIJVM
