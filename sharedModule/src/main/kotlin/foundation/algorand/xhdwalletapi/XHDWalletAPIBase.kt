@@ -261,7 +261,7 @@ abstract class XHDWalletAPIBase(private var seed: ByteArray) {
    * @returns
    * - (z, c) where z is the 64-byte child key and c is the chain code
    */
-  internal fun deriveHardened(
+  fun deriveHardened(
           kl: ByteArray,
           kr: ByteArray,
           cc: ByteArray,
