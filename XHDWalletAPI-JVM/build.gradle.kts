@@ -13,8 +13,8 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 sourceSets {
@@ -26,13 +26,13 @@ sourceSets {
 dependencies {
     api(project(":sharedModule"))
     
-    testImplementation("com.algorand:algosdk:2.4.0")
+    testImplementation("com.algorand:algosdk:2.10.1")
     
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
     // Use the JUnit 5 integration.
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:6.0.0")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
@@ -41,11 +41,11 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile
     // classpath.
-    implementation("com.google.guava:guava:31.0.1-jre")
+    implementation("com.google.guava:guava:33.5.0-jre")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
-java { toolchain { languageVersion.set(JavaLanguageVersion.of(17)) } }
+java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 // Required for publishing to Maven Central.
 tasks.register<Jar>("javadocJar") {
