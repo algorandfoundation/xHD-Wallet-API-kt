@@ -553,6 +553,7 @@ abstract class XHDWalletAPIBase(private var seed: ByteArray) {
    * @returns
    * - signature holding R and S, totally 64 bytes
    */
+  @Deprecated("signData is deprecated, please use sign() and validate data separately")
   fun signData(
           context: KeyContext,
           account: UInt,
@@ -582,14 +583,17 @@ abstract class XHDWalletAPIBase(private var seed: ByteArray) {
    * - context of the key (i.e Address, Identity)
    * @param account
    * - account number. This value will be hardened as part of BIP44
+   * @param change
+   * - change number. This value will be a SOFT derivation as part of BIP44, usually 0
    * @param keyIndex
    * - key index. This value will be a SOFT derivation as part of BIP44.
-   * @param tx
+   * @param prefixEncodedTx
    * - Transaction object containing parameters to be signed, e.g. sender, receiver, amount, fee,
    *
-   * @returns stx
-   * - SignedTransaction object
+   * @returns
+   * - signature holding R and S, totally 64 bytes
    */
+  @Deprecated("signAlgoTransaction is deprecated, please use sign()")
   fun signAlgoTransaction(
           context: KeyContext,
           account: UInt,
@@ -601,6 +605,35 @@ abstract class XHDWalletAPIBase(private var seed: ByteArray) {
     return rawSign(
             getBIP44PathFromContext(context, account, change, keyIndex),
             prefixEncodedTx,
+            derivationType
+    )
+  }
+
+  /**
+   * Sign bytes with the key derived from the context, account and keyIndex.
+   * @param context
+   * - context of the key (i.e Address, Identity)
+   * @param account
+   * - account number. This value will be hardened as part of BIP44
+   * @param keyIndex
+   * - key index. This value will be a SOFT derivation as part of BIP44.
+   * @param bytes
+   * - data to be signed in raw bytes
+   *
+   * @returns
+   * - signature holding R and S, totally 64 bytes
+   */
+  fun sign(
+          context: KeyContext,
+          account: UInt,
+          change: UInt,
+          keyIndex: UInt,
+          bytes: ByteArray,
+          derivationType: Bip32DerivationType = Bip32DerivationType.Peikert
+  ): ByteArray {
+    return rawSign(
+            getBIP44PathFromContext(context, account, change, keyIndex),
+            bytes,
             derivationType
     )
   }
