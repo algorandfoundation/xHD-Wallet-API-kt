@@ -1272,6 +1272,71 @@ class XHDWalletAPITest {
 
         @Nested
         @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        inner class SignTests {
+                private lateinit var c: XHDWalletAPIJVM
+
+                @BeforeAll
+                fun setup() {
+                        val seed =
+                                MnemonicCode(
+                                        "salon zoo engage submit smile frost later decide wing sight chaos renew lizard rely canal coral scene hobby scare step bus leaf tobacco slice".toCharArray()
+                                )
+                        c = XHDWalletAPIJVM(seed.toSeed())
+                }
+
+                fun simpleSignDataTest() {
+                        // Message to sign
+
+                        val data = """{"text":"Hello, World!"}""".trimIndent().toByteArray()
+
+                        val signature =
+                                c.sign(
+                                        KeyContext.Address,
+                                        0u,
+                                        0u,
+                                        0u,
+                                        data,
+                                        Bip32DerivationType.Khovratovich
+                                )
+
+                        assert(
+                                signature.contentEquals(
+                                        helperStringToByteArray(
+                                                "137,13,247,162,115,48,233,188,188,81,7,167,158,250,252,66,138,30,3,65,88,209,92,250,43,13,60,193,44,175,87,93,60,73,243,145,170,38,214,152,29,54,61,109,241,24,238,186,159,45,149,15,141,69,118,162,31,148,162,221,29,156,226,1"
+                                        )
+                                )
+                        ) { "Signature different from expected" }
+
+                        val pk =
+                                c.keyGen(
+                                        KeyContext.Address,
+                                        0u,
+                                        0u,
+                                        0u,
+                                        Bip32DerivationType.Khovratovich
+                                )
+
+                        assert(signature.size == 64) { "Signature size is not 64" }
+
+                        val isValid = c.verifyWithPublicKey(signature, data, pk)
+                        assert(isValid) { "signature is not valid" }
+
+                        val pk2 =
+                                c.keyGen(
+                                        KeyContext.Address,
+                                        0u,
+                                        0u,
+                                        1u,
+                                        Bip32DerivationType.Khovratovich
+                                )
+                        assert(!c.verifyWithPublicKey(signature, data, pk2)) {
+                                "signature is unexpectedly valid"
+                        }
+                }
+        }
+
+        @Nested
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
         inner class SignTypedDataTests {
                 private lateinit var c: XHDWalletAPIJVM
 
